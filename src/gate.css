@@ -1,1 +1,76 @@
-.gate{margin-top:20px;padding:20px;border-radius:14px;display:flex;gap:16px;align-items:flex-start}.gate.open{background:#0d3228;border:1px solid #22c55e}.gate.closed{background:#2a1a10;border:1px solid #92400e}.gate-icon{width:56px;height:56px;min-width:56px;border-radius:12px;display:grid;place-items:center}.gate.open .gate-icon{background:#14532d;color:#4ade80}.gate.closed .gate-icon{background:#431407;color:#fb923c}.gate-icon svg{width:28px;height:28px}.gate b{display:block;font-size:16px;margin-bottom:4px}.gate span{display:inline-block;padding:4px 10px;border-radius:8px;background:#0006;font-size:12px;font-weight:700}.gate.open span{color:#86efac}.gate.closed span{color:#fdba74}.gate p{font-size:12px;color:#a89c8e;margin-top:10px;line-height:1.6}
+/* Gate of Trials Styles - Clean Line RPG Theme */
+.gate {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 14px;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.gate.open {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+.gate.closed {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.gate-icon {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.gate.open .gate-icon {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+.gate.closed .gate-icon {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.gate-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.gate b {
+  display: block;
+  font-family: var(--font-title, sans-serif);
+  font-size: 18px;
+  margin-bottom: 4px;
+  color: #ffffff;
+}
+
+.gate span {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  font-family: var(--font-game, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gate.open span {
+  color: #6ee7b7;
+}
+
+.gate.closed span {
+  color: #fde047;
+}
+
+.gate p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 8px;
+  line-height: 1.5;
+}
