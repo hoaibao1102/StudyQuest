@@ -1,6 +1,6 @@
 import type { Knowledge, Question } from "../types";
 
-export type LessonStepType = "intro" | "concept" | "trap" | "checkpoint";
+export type LessonStepType = "intro" | "concept" | "example" | "trap" | "checkpoint";
 export interface LessonStep {
   id: string;
   type: LessonStepType;
@@ -21,9 +21,15 @@ export function buildLessonSteps(knowledge: Knowledge[], questions: Question[]):
   }];
   selected.forEach((concept, index) => {
     steps.push({ id:`${concept.id}:concept`, type:"concept", eyebrow:`MẢNH GHÉP ${index + 1}/${selected.length}`, title:concept.title, content:concept.summary.slice(0, 4), concept });
+    const question = questions.find(q=>q.conceptId===concept.id && q.qualityStatus==="clean" && q.correctAnswerIds.length>0);
+    const sourceExample = concept.summary.find(line=>/ví dụ|chẳng hạn|example/i.test(line));
+    const answerText = question?.correctAnswerIds.map(id=>question.options.find(o=>o.id===id)?.text).filter(Boolean).join(" và ");
+    const simpleExample = sourceExample || (question && answerText
+      ? `Tình huống: ${question.question} → Cách nhận biết đơn giản: ${answerText}.`
+      : `Hãy liên hệ “${concept.title}” với một tình huống quen thuộc và tìm đúng từ khóa vừa học.`);
+    steps.push({ id:`${concept.id}:example`, type:"example", eyebrow:"VÍ DỤ SIÊU ĐƠN GIẢN", title:"Nhìn một lần là hiểu", content:[simpleExample], concept });
     const trap = concept.traps[0] || questions.find(q=>q.conceptId===concept.id && q.trap)?.trap;
     if (trap) steps.push({ id:`${concept.id}:trap`, type:"trap", eyebrow:"CẢNH BÁO BẪY", title:"Đừng để nhiễu đánh lừa", content:[trap], concept });
-    const question = questions.find(q=>q.conceptId===concept.id && q.qualityStatus==="clean" && q.correctAnswerIds.length>0);
     if (question) steps.push({ id:`${concept.id}:checkpoint`, type:"checkpoint", eyebrow:"CHECKPOINT", title:"Kiểm tra trí nhớ", content:[], concept, question });
   });
   return steps;
