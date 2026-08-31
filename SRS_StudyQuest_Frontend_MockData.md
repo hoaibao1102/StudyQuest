@@ -1,10 +1,14 @@
 # SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
 # StudyQuest Frontend — Hệ thống học & luyện thi trắc nghiệm gamified
 
-**Phiên bản:** 1.0  
-**Trạng thái:** Draft baseline  
-**Phạm vi phiên bản đầu:** Frontend-only + Mock Data  
-**Môn triển khai đầu tiên:** MLN111 — Triết học Mác - Lênin  
+**Phiên bản:** 1.1
+
+**Trạng thái:** Implementation-ready baseline
+
+**Phạm vi phiên bản đầu:** Frontend-only + Mock Data
+
+**Môn triển khai đầu tiên:** MLN111 — Triết học Mác - Lênin
+
 **Định hướng mở rộng:** 4 môn trắc nghiệm trong kỳ học tới
 
 ---
@@ -124,6 +128,18 @@ Không triển khai:
 - Server-side exam security.
 
 Các tính năng trên có thể được xem xét ở phiên bản sau.
+
+## 3.3. Baseline học liệu hiện có
+
+| Subject ID | Môn | Canonical occurrences | Unique questions | Clean | Flagged | Concepts | Flashcards |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `mln111` | Triết học Mác - Lênin | 420 | 311 | 297 | 14 | 66 | 118 |
+| `mln122` | Kinh tế chính trị Mác - Lênin | 660 | 435 | 431 | 4 | 20 | 431 |
+| `ite302c` | Ethics in IT / AI Ethics | 780 | 380 | 361 | 19 | 189 | 353 |
+| `prm393` | Mobile Programming | 248 | 158 | 151 | 7 | 87 | 120 |
+| **Tổng** | **4 môn** | **2.108** | **1.284** | **1.240** | **44** | **362** | **1.022** |
+
+Các số liệu trên là snapshot v0.1 từ README của từng knowledge base. Đây là baseline để kiểm tra parser, không phải cam kết bất biến; khi corpus đổi phải cập nhật `contentVersion`, manifest và báo cáo validation.
 
 ---
 
@@ -588,6 +604,45 @@ interface QuestionAttempt {
     | "weakness";
 }
 ```
+
+## 17.1. Study Session
+
+Mọi Quiz, Adventure Challenge và Weakness Hunt phải được biểu diễn bằng một session có thể resume và audit.
+
+```ts
+type StudySessionStatus = "active" | "completed" | "abandoned" | "error";
+
+interface StudySession {
+  id: string;
+  subjectId: string;
+  mode: "learn" | "quiz" | "speed" | "boss" | "weakness";
+  status: StudySessionStatus;
+
+  questionIds: string[];
+  optionOrderByQuestionId: Record<string, string[]>;
+  attemptIds: string[];
+  currentQuestionIndex: number;
+  currentSelection: string[];
+
+  randomSeed: string;
+  contentVersion: string;
+  startedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+
+  correctCount: number;
+  incorrectCount: number;
+  unansweredCount: number;
+  xpEarned: number;
+
+  source?: {
+    stageId?: string;
+    quizConfigId?: string;
+  };
+}
+```
+
+Full Exam dùng `ExamSession` chuyên biệt nhưng phải tuân theo cùng nguyên tắc: stable question order, autosave, status, content snapshot và result idempotent.
 
 ---
 
@@ -2356,6 +2411,33 @@ interface Question {
 
 Build phải thất bại nếu có ID trùng, reference không tồn tại, đáp án không thuộc options, sai cardinality hoặc exam trỏ tới question không tồn tại. Lỗi riêng lẻ phát hiện ở runtime phải được ghi nhận và entity lỗi phải bị bỏ qua thay vì làm crash toàn ứng dụng.
 
+## 49.5. Source adapter và normalization rules
+
+Parser của từng môn được phép đọc schema nguồn khác nhau, nhưng output phải đúng Canonical Data Contract. Mapping V1:
+
+| Nguồn | Giá trị nguồn | Canonical output |
+|---|---|---|
+| MLN111/MLN122 | `quality` | `qualityStatus` |
+| ITE302c/PRM393 | `qualityStatus` | Giữ nguyên |
+| ITE302c | `single_choice` / `multiple_select` | `single` / `multiple` |
+| PRM393 | `single_choice` / `multiple_choice` | `single` / `multiple` |
+| Mọi nguồn | `correctAnswer` | Mảng `correctAnswerIds` một phần tử |
+| Mọi nguồn | `correctAnswers` | `correctAnswerIds` |
+| Mọi nguồn | option chỉ có `id`, `text` | `label = id` |
+| Difficulty dạng chữ | `easy` / `medium` / `hard` | `1` / `2` / `3` |
+| PRM393 | `difficulty = review` | `difficulty = 2`, thêm tag `source_difficulty_review` |
+| Nguồn thiếu difficulty | không có | `difficulty = 2`, thêm tag `difficulty_inferred` |
+| Nguồn thiếu tags | không có | `tags = []` cộng các tag do adapter sinh |
+| Source ref dạng string | ví dụ `EXAM:C3` | Parse best-effort thành `sourceId` + `occurrence`; giữ raw value nếu không parse được |
+
+Quy tắc bổ sung:
+
+- Adapter phải deterministic và có unit test bằng fixture của cả bốn môn.
+- Không được suy diễn `difficulty = 4` tự động; mức 4 chỉ được gắn qua bước content audit có nguồn/ghi chú rõ ràng.
+- Không được silently chuyển câu flagged thành clean.
+- Field nguồn không map được phải được giữ trong build report hoặc `sourceMetadata`, không được âm thầm mất dữ liệu.
+- Build report phải đối chiếu số lượng input/output, clean/flagged, orphan reference và record bị loại theo từng subject với baseline tại mục 3.3.
+
 ---
 
 # 50. ROUTE MAP VÀ NAVIGATION CONTRACT
@@ -2831,7 +2913,7 @@ Mỗi source phải có metadata provenance và trạng thái quyền sử dụn
 - Có mã hóa file export hay chỉ JSON portable?
 - Threshold pass exam có phụ thuộc từng môn/đề không?
 - Khi nào `ambiguous` được nâng thành `clean`, ai là người phê duyệt?
-- MLN112 là môn thứ tư chính thức hay chỉ là placeholder?
+- Bộ dữ liệu MLN122 có cần audit bổ sung với giáo trình chính thức trước public release không?
 
 Mỗi câu hỏi mở phải được chuyển thành ADR hoặc requirement đã chốt trước khi phần liên quan được triển khai. Không được để component tự quyết định ngầm các quy tắc nghiệp vụ.
 
@@ -2930,9 +3012,14 @@ interface LearningStage {
   order: number;
   conceptIds: string[];
   prerequisiteStageIds: string[];
+  required: boolean;
   minimumQuestionCount: number;
   passAccuracy: number;
-  threeStarAccuracy: number;
+  starThresholds: {
+    oneStar: number;
+    twoStars: number;
+    threeStars: number;
+  };
   estimatedMinutes: number;
   questionSelection: "concept_pool" | "weakness_pool" | "exam_map";
   rewards: {
@@ -2969,7 +3056,7 @@ interface StageProgress {
 - Graph prerequisite không được có chu trình.
 - Mỗi region phải có đúng một Boss Stage.
 - Boss Stage phải phụ thuộc vào tất cả learning stage bắt buộc trong region.
-- `passAccuracy` và `threeStarAccuracy` nằm trong `[0, 1]`, trong đó `threeStarAccuracy >= passAccuracy`.
+- Các threshold nằm trong `[0, 1]` và thỏa `passAccuracy <= oneStar <= twoStars <= threeStars`.
 - Nếu stage không đủ `minimumQuestionCount` clean thì build cảnh báo và stage không được dùng để khóa tiến trình.
 
 ---
