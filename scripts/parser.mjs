@@ -63,10 +63,12 @@ export function parseMasterQuestions(text, subject) {
 export function parseKnowledge(text, subject) {
   const ids = [...text.matchAll(/^\*\*ID:\*\*\s*`([^`]+)`/gm)];
   return ids.map((m,i) => {
-    const start = text.lastIndexOf("\n## ", m.index) + 4;
-    const titleEnd = text.indexOf("\n", start);
+    const headings = [...text.slice(0, m.index).matchAll(/^#{1,2}\s+(.+)$/gm)];
+    const title = (headings.at(-1)?.[1] || m[1]).replace(/^Concept:\s*/i, "").trim();
     const block = text.slice(m.index, ids[i+1]?.index ?? text.length);
     const bullets = [...block.matchAll(/^- (.+)$/gm)].map(x=>x[1].trim()).filter(x=>!x.startsWith("`"));
-    return { id:m[1], subjectId:subject.id, chapterId:(m[1].match(/^[^-]+-C\d+/)||[`${subject.chapterPrefix}-C1`])[0], title:text.slice(start,titleEnd).replace(/^Concept:\s*/i, "").trim(), summary:bullets.slice(0,5), traps:bullets.filter(x=>/nhầm|trap|nhiễu/i.test(x)).slice(0,3) };
+    const explicitChapter = block.match(/^\*\*Chapter:\*\*.*?`([^`]+)`/m)?.[1];
+    const inferredChapter = (m[1].match(/^[^-]+-C\d+/)||[`${subject.chapterPrefix}-C1`])[0];
+    return { id:m[1], subjectId:subject.id, chapterId:explicitChapter || inferredChapter, title, summary:bullets.slice(0,5), traps:bullets.filter(x=>/nhầm|trap|nhiễu/i.test(x)).slice(0,3) };
   });
 }
