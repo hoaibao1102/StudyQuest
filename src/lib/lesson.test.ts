@@ -15,25 +15,19 @@ const questions = [{
 }] as Question[];
 
 describe("interactive lesson builder", () => {
-  test("turns dry knowledge into concept, simple example, trap and checkpoint steps", () => {
+  test("turns dry knowledge into concept with rich content and checkpoint steps", () => {
     const steps = buildLessonSteps(knowledge, questions);
-    expect(steps.map(s=>s.type)).toEqual(["intro","concept","example","trap","checkpoint"]);
-    expect(steps[2].content[0]).toContain("Curve nào tạo hiệu ứng nảy?");
-    expect(steps[2].content[0]).toContain("bounceOut");
+    expect(steps.map(s => s.type)).toEqual(["intro", "concept", "checkpoint"]);
     expect(steps.at(-1)?.question?.id).toBe("Q1");
   });
 
-  test("prefers a simple example already present in knowledge", () => {
-    const withExample = [{...knowledge[0], summary:["Tween đổi giá trị từ đầu đến cuối, ví dụ: từ 0 đến 100."]}];
-    const steps = buildLessonSteps(withExample, questions);
-    expect(steps.find(s=>s.type==="example")?.content[0]).toContain("từ 0 đến 100");
-  });
   test("blocks the challenge until every checkpoint is answered correctly", () => {
     const steps = buildLessonSteps(knowledge, questions);
     expect(allCheckpointsPassed(steps, {})).toBe(false);
     expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": false })).toBe(false);
     expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": true })).toBe(true);
   });
+
   test("highlights meaningful terms without matching tiny words", () => {
     const parts = highlightKeywords("CurvedAnimation dùng AnimationController và bounceOut", ["CurvedAnimation","AnimationController","bounceOut","và"]);
     expect(parts.filter(p=>p.highlight).map(p=>p.text)).toEqual(["CurvedAnimation","AnimationController","bounceOut"]);

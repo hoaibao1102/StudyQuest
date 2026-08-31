@@ -58,6 +58,7 @@ import {
 import { allCheckpointsPassed, buildLessonSteps, checkpointStats, highlightKeywords, lessonKeywords } from "./lib/lesson";
 import { sound } from "./lib/sound";
 import { translateConceptSentence, translateConceptTitle, translateQuestionPrompt } from "./lib/translate";
+import { getSimpleConceptExample } from "./lib/examples";
 
 const DATA = (p: string) => `${import.meta.env.BASE_URL}data/${p}`;
 
@@ -1199,65 +1200,54 @@ function InteractiveLesson({
       </div>
 
       <div className="lesson-card">
-        <aside className="lesson-aside">
-          <div className="lesson-icon-circle">{icon}</div>
-          <span className="step-eyebrow-aside">{step.eyebrow}</span>
-          {step.concept && (
-            <div className="concept-rune">
-              <KeyRound size={16} />
-              <small>CHÌA KHÓA</small>
-              <b>{step.concept.title.split(" ").slice(0, 3).join(" ")}</b>
-            </div>
-          )}
-        </aside>
-
-        <div className="lesson-body">
-          <div className="lang-switcher-row" style={{ marginBottom: 12 }}>
-            <div className="eyebrow" style={{ margin: 0 }}>
-              <Sparkles size={14} /> {step.eyebrow}
-            </div>
-
-            <div className="lang-switcher">
-              <button
-                className={`lang-btn ${lessonLangMode === "en" ? "active" : ""}`}
-                onClick={() => {
-                  sound.playClick();
-                  setLessonLangMode("en");
-                }}
-                title="Xem bí kíp gốc Tiếng Anh"
-              >
-                EN
-              </button>
-              <button
-                className={`lang-btn ${lessonLangMode === "vi" ? "active" : ""}`}
-                onClick={() => {
-                  sound.playClick();
-                  setLessonLangMode("vi");
-                }}
-                title="Dịch lý thuyết sang Tiếng Việt"
-              >
-                VI
-              </button>
-              <button
-                className={`lang-btn ${lessonLangMode === "bilingual" ? "active" : ""}`}
-                onClick={() => {
-                  sound.playClick();
-                  setLessonLangMode("bilingual");
-                }}
-                title="Chế độ Song ngữ Anh - Việt"
-              >
-                <Languages size={13} /> Song ngữ
-              </button>
-            </div>
+        {/* Thanh tiêu đề & ngôn ngữ tích hợp trong card */}
+        <div className="lesson-card-top-bar">
+          <div className="card-top-badge">
+            <span className="step-tag-pill">
+              {icon} {step.eyebrow}
+            </span>
+            {step.concept && (
+              <span className="key-rune-pill">
+                <KeyRound size={13} /> {step.concept.title.split(" ").slice(0, 4).join(" ")}
+              </span>
+            )}
           </div>
 
-          <h2>{lessonLangMode === "vi" ? translateConceptTitle(step.title) : step.title}</h2>
-          {lessonLangMode === "bilingual" && translateConceptTitle(step.title) !== step.title && (
-            <div className="concept-vi-title-tag">
-              <Languages size={13} /> {translateConceptTitle(step.title)}
-            </div>
-          )}
+          <div className="lang-switcher">
+            <button
+              className={`lang-btn ${lessonLangMode === "en" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLessonLangMode("en");
+              }}
+              title="Xem bí kíp gốc Tiếng Anh"
+            >
+              EN
+            </button>
+            <button
+              className={`lang-btn ${lessonLangMode === "vi" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLessonLangMode("vi");
+              }}
+              title="Dịch lý thuyết sang Tiếng Việt"
+            >
+              VI
+            </button>
+            <button
+              className={`lang-btn ${lessonLangMode === "bilingual" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLessonLangMode("bilingual");
+              }}
+              title="Chế độ Song ngữ Anh - Việt"
+            >
+              <Languages size={13} /> Song ngữ
+            </button>
+          </div>
+        </div>
 
+        <div className="lesson-body">
           {step.type === "intro" && (
             <div className="mission-copy">
               <KeyRound size={20} className="mission-icon" />
@@ -1268,47 +1258,168 @@ function InteractiveLesson({
             </div>
           )}
 
-          {step.content.map((text, i) => {
-            const cleanText = text.replace(/\*\*/g, "");
-            const viText = translateConceptSentence(cleanText);
-            const hasVietnamese = viText !== cleanText;
+          {step.type === "concept" && (() => {
+            const conceptExample = getSimpleConceptExample(step.concept, data.id);
+            return (
+              <div className="lesson-split-layout">
+                {/* Cột trái: Lý thuyết cốt lõi */}
+                <div className="lesson-theory-pane">
+                  <h2>{lessonLangMode === "vi" ? translateConceptTitle(step.title) : step.title}</h2>
+                  {lessonLangMode === "bilingual" && translateConceptTitle(step.title) !== step.title && (
+                    <div className="concept-vi-title-tag">
+                      <Languages size={13} /> {translateConceptTitle(step.title)}
+                    </div>
+                  )}
 
-            if (lessonLangMode === "vi") {
-              return (
-                <p className="lesson-copy" key={i}>
-                  {viText}
-                </p>
-              );
-            }
+                  {step.content.map((text, i) => {
+                    const cleanText = text.replace(/\*\*/g, "");
+                    const viText = translateConceptSentence(cleanText);
+                    const hasVietnamese = viText !== cleanText;
 
-            if (lessonLangMode === "bilingual") {
-              return (
-                <div className="bilingual-lesson-item" key={i}>
-                  <p className="lesson-copy en-original">
+                    if (lessonLangMode === "vi") {
+                      return (
+                        <p className="lesson-copy" key={i}>
+                          {viText}
+                        </p>
+                      );
+                    }
+
+                    if (lessonLangMode === "bilingual") {
+                      return (
+                        <div className="bilingual-lesson-item" key={i}>
+                          <p className="lesson-copy en-original">
+                            {highlightKeywords(cleanText, keywords).map((part, j) =>
+                              part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
+                            )}
+                          </p>
+                          {hasVietnamese && (
+                            <div className="vi-translation-sub">
+                              <Languages size={13} />
+                              <span>
+                                <b>Dịch nghĩa:</b> {viText}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <p className="lesson-copy" key={i}>
+                        {highlightKeywords(cleanText, keywords).map((part, j) =>
+                          part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
+                        )}
+                      </p>
+                    );
+                  })}
+
+                  {keywords.length > 0 && (
+                    <div className="keyword-loot">
+                      <small>
+                        <Sparkles size={12} /> TỪ KHÓA ĐÃ THU THẬP
+                      </small>
+                      <div className="loot-tags">
+                        {keywords.map((k) => (
+                          <span key={k} className="loot-chip">
+                            {k}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cột phải: Card Ví dụ siêu dễ hiểu như cho trẻ lớp 3 */}
+                <aside className="lesson-example-card">
+                  <div className="example-card-header">
+                    <div className="example-header-left">
+                      <Lightbulb size={18} />
+                      <span>VÍ DỤ ĐỜI THƯỜNG</span>
+                    </div>
+                    <span className="easy-badge">
+                      <Sparkles size={10} /> DỄ HIỂU LỚP 3
+                    </span>
+                  </div>
+
+                  <div className="example-story-box">
+                    <span className="story-label">
+                      🧁 TÌNH HUỐNG THỰC TẾ:
+                    </span>
+                    <p className="example-story-text">{conceptExample.story}</p>
+                  </div>
+
+                  <div className="example-tldr-box">
+                    <Target size={16} />
+                    <div>
+                      <b>Ghi nhớ nhanh:</b> {conceptExample.tldr}
+                    </div>
+                  </div>
+
+                  {conceptExample.trapWarning && (
+                    <div className="example-trap-box">
+                      <AlertTriangle size={16} />
+                      <div>
+                        <b>Cảnh báo bẫy:</b> {conceptExample.trapWarning}
+                      </div>
+                    </div>
+                  )}
+                </aside>
+              </div>
+            );
+          })()}
+
+          {step.type !== "concept" && step.type !== "intro" && (
+            <>
+              <h2>{lessonLangMode === "vi" ? translateConceptTitle(step.title) : step.title}</h2>
+              {lessonLangMode === "bilingual" && translateConceptTitle(step.title) !== step.title && (
+                <div className="concept-vi-title-tag">
+                  <Languages size={13} /> {translateConceptTitle(step.title)}
+                </div>
+              )}
+
+              {step.content.map((text, i) => {
+                const cleanText = text.replace(/\*\*/g, "");
+                const viText = translateConceptSentence(cleanText);
+                const hasVietnamese = viText !== cleanText;
+
+                if (lessonLangMode === "vi") {
+                  return (
+                    <p className="lesson-copy" key={i}>
+                      {viText}
+                    </p>
+                  );
+                }
+
+                if (lessonLangMode === "bilingual") {
+                  return (
+                    <div className="bilingual-lesson-item" key={i}>
+                      <p className="lesson-copy en-original">
+                        {highlightKeywords(cleanText, keywords).map((part, j) =>
+                          part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
+                        )}
+                      </p>
+                      {hasVietnamese && (
+                        <div className="vi-translation-sub">
+                          <Languages size={13} />
+                          <span>
+                            <b>Dịch nghĩa:</b> {viText}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <p className="lesson-copy" key={i}>
                     {highlightKeywords(cleanText, keywords).map((part, j) =>
                       part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
                     )}
                   </p>
-                  {hasVietnamese && (
-                    <div className="vi-translation-sub">
-                      <Languages size={13} />
-                      <span>
-                        <b>Dịch nghĩa:</b> {viText}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
-            return (
-              <p className="lesson-copy" key={i}>
-                {highlightKeywords(cleanText, keywords).map((part, j) =>
-                  part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
-                )}
-              </p>
-            );
-          })}
+                );
+              })}
+            </>
+          )}
 
           {keywords.length > 0 && step.type === "concept" && (
             <div className="keyword-loot">
