@@ -18,12 +18,14 @@ import {
   Home,
   KeyRound,
   Landmark,
+  Languages,
   Layers,
   Lightbulb,
   LockKeyhole,
   Map,
   RotateCcw,
   ScrollText,
+  Search,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -36,13 +38,26 @@ import {
   Trophy,
   Volume2,
   VolumeX,
+  X,
   Zap,
 } from "lucide-react";
 import type { Question, SubjectData, SubjectManifest } from "./types";
 import { createQuiz, gradeAnswer, shuffle } from "./lib/quiz";
-import { calculateStars, loadProgress, saveProgress, updateProgress, type ProgressStore } from "./lib/progress";
+import {
+  calculateLevelInfo,
+  calculateStars,
+  getTotalXP,
+  loadProgress,
+  loadStreak,
+  markLessonCompleted,
+  recordDailyActivity,
+  saveProgress,
+  updateProgress,
+  type ProgressStore,
+} from "./lib/progress";
 import { allCheckpointsPassed, buildLessonSteps, checkpointStats, highlightKeywords, lessonKeywords } from "./lib/lesson";
 import { sound } from "./lib/sound";
+import { translateConceptSentence, translateConceptTitle, translateQuestionPrompt } from "./lib/translate";
 
 const DATA = (p: string) => `${import.meta.env.BASE_URL}data/${p}`;
 
@@ -105,7 +120,10 @@ function Stars({ n, max = 3, size = 16 }: { n: number; max?: number; size?: numb
 function Shell({ children }: { children: React.ReactNode }) {
   const [muted, setMuted] = useState(sound.isMuted());
   const [progress] = useState(loadProgress);
+  const [streakInfo] = useState(loadStreak);
   const totalStars = useMemo(() => Object.values(progress).reduce((a, p) => a + p.stars, 0), [progress]);
+  const totalXP = useMemo(() => getTotalXP(progress), [progress]);
+  const levelInfo = useMemo(() => calculateLevelInfo(totalXP), [totalXP]);
 
   const handleToggleSound = () => {
     const isNowMuted = sound.toggleMute();
@@ -134,9 +152,9 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span>Trang chủ</span>
           </Link>
 
-          <div className="hud-badge streak-badge" title="Chuỗi 7 ngày học tập liên tục">
+          <div className="hud-badge streak-badge" title="Chuỗi ngày học tập liên tục">
             <Flame size={16} className="pulse-flame" />
-            <span>7 ngày</span>
+            <span>{streakInfo.streak > 0 ? `${streakInfo.streak} ngày` : "Khởi đầu"}</span>
           </div>
 
           <div className="hud-badge star-badge" title="Tổng số sao vượt ải thu thập">
@@ -147,15 +165,17 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="hud-player-profile">
             <div className="hud-avatar">
               <Crown size={14} className="avatar-crown" />
-              <span>12</span>
+              <span>{levelInfo.level}</span>
             </div>
             <div className="hud-exp">
               <div className="exp-label">
-                <span>LVL 12</span>
-                <span className="exp-numbers">1,240 / 2,000 XP</span>
+                <span>LVL {levelInfo.level}</span>
+                <span className="exp-numbers">
+                  {levelInfo.currentLevelXP.toLocaleString()} / {levelInfo.nextLevelXP.toLocaleString()} XP
+                </span>
               </div>
               <div className="exp-bar">
-                <div className="exp-fill" style={{ width: "62%" }} />
+                <div className="exp-fill" style={{ width: `${levelInfo.progressPercent}%` }} />
               </div>
             </div>
           </div>
@@ -188,7 +208,11 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function Dashboard() {
   const manifest = useManifest();
+  const [progress] = useState(loadProgress);
+  const [streakInfo] = useState(loadStreak);
   const totalQuestions = manifest.reduce((a, s) => a + s.stats.questions, 0);
+  const totalXP = useMemo(() => getTotalXP(progress), [progress]);
+  const levelInfo = useMemo(() => calculateLevelInfo(totalXP), [totalXP]);
 
   return (
     <Shell>
@@ -210,7 +234,8 @@ function Dashboard() {
               <Gamepad2 size={18} /> Bắt đầu hành trình
             </a>
             <div className="hero-streak-pill">
-              <Flame size={16} /> <span>Streak 7 ngày rực cháy</span>
+              <Flame size={16} />{" "}
+              <span>{streakInfo.streak > 0 ? `Streak ${streakInfo.streak} ngày` : "Khởi đầu hành trình mới"}</span>
             </div>
           </div>
         </div>
@@ -220,10 +245,10 @@ function Dashboard() {
             <div className="orb-inner">
               <Trophy size={48} className="orb-trophy" />
               <div className="orb-level-badge">
-                <Crown size={14} /> LEVEL 12
+                <Crown size={14} /> LEVEL {levelInfo.level}
               </div>
-              <b>Học giả tập sự</b>
-              <span>1,240 XP tích lũy</span>
+              <b>{levelInfo.title}</b>
+              <span>{levelInfo.totalXP.toLocaleString()} XP tích lũy</span>
             </div>
             <div className="orb-ring ring-1" />
             <div className="orb-ring ring-2" />
@@ -322,10 +347,550 @@ function Dashboard() {
   );
 }
 
+function FreeQuizArena({
+  questions,
+  onFinish,
+}: {
+  questions: Question[];
+  onFinish: (score: number) => void;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [checked, setChecked] = useState(false);
+  const [correct, setCorrect] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [langMode, setLangMode] = useState<"en" | "vi" | "bilingual">("bilingual");
+
+  const q = questions[idx];
+  if (!q) return null;
+
+  const isRight = gradeAnswer(selected, q.correctAnswerIds);
+
+  const toggle = (x: string) => {
+    if (checked) return;
+    sound.playClick();
+    setSelected((s) => (q.type === "single" ? [x] : s.includes(x) ? s.filter((y) => y !== x) : [...s, x]));
+  };
+
+  const handleConfirm = () => {
+    setChecked(true);
+    if (isRight) {
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      sound.playCorrect(nextCombo);
+    } else {
+      setCombo(0);
+      sound.playWrong();
+    }
+  };
+
+  const next = () => {
+    sound.playClick();
+    const n = correct + (isRight ? 1 : 0);
+    if (idx === questions.length - 1) {
+      onFinish(Math.round((n / questions.length) * 100));
+    } else {
+      setCorrect(n);
+      setIdx(idx + 1);
+      setSelected([]);
+      setChecked(false);
+    }
+  };
+
+  const translatedPrompt = translateQuestionPrompt(q.question);
+
+  return (
+    <section className="battle-arena">
+      <div className="battle-hud-top">
+        <div className="battle-mode-title">
+          <Swords size={16} /> ĐẤU TRƯỜNG TỰ DO
+        </div>
+
+        {combo >= 2 && (
+          <div className="combo-counter pulse-combo">
+            <Flame size={16} />
+            <span>COMBO x{combo}</span>
+          </div>
+        )}
+
+        <div className="battle-counter">
+          <b>{idx + 1}</b> / {questions.length}
+        </div>
+      </div>
+
+      <div className="hp-bar-frame">
+        <div className="hp-fill" style={{ width: `${(idx / questions.length) * 100}%` }} />
+      </div>
+
+      <div className="question-card">
+        <div className="lang-switcher-row">
+          <div className="question-meta-row" style={{ margin: 0 }}>
+            <span className="difficulty-pill">
+              <Target size={12} /> ĐỘ KHÓ {q.difficulty}
+            </span>
+            <span className="question-type-pill">
+              {q.type === "multiple" ? `CHỌN ${q.requiredAnswers} ĐÁP ÁN` : "CHỌN 1 ĐÁP ÁN"}
+            </span>
+          </div>
+
+          <div className="lang-switcher">
+            <button
+              className={`lang-btn ${langMode === "en" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("en");
+              }}
+              title="Xem câu hỏi gốc Tiếng Anh"
+            >
+              EN
+            </button>
+            <button
+              className={`lang-btn ${langMode === "vi" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("vi");
+              }}
+              title="Dịch câu hỏi sang Tiếng Việt"
+            >
+              VI
+            </button>
+            <button
+              className={`lang-btn ${langMode === "bilingual" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("bilingual");
+              }}
+              title="Chế độ Song ngữ Anh - Việt"
+            >
+              <Languages size={13} /> Song ngữ
+            </button>
+          </div>
+        </div>
+
+        <div className="question-title-container">
+          <h2 className="question-title">{langMode === "vi" ? translatedPrompt : q.question}</h2>
+
+          {langMode === "bilingual" && (
+            <div className="bilingual-translation-box">
+              <div className="bilingual-tag">
+                <Languages size={12} /> BẢN DỊCH &amp; GIẢI NGHĨA TIẾNG VIỆT:
+              </div>
+              <p className="bilingual-text">{translatedPrompt}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="options-grid">
+          {q.options.map((o) => {
+            const isSelected = selected.includes(o.id);
+            const isAnswerCorrect = q.correctAnswerIds.includes(o.id);
+            const showCorrect = checked && isAnswerCorrect;
+            const showWrong = checked && isSelected && !isAnswerCorrect;
+
+            return (
+              <button
+                onClick={() => toggle(o.id)}
+                className={`option-btn ${isSelected ? "selected" : ""} ${showCorrect ? "correct" : ""} ${
+                  showWrong ? "wrong" : ""
+                }`}
+                key={o.id}
+                disabled={checked}
+              >
+                <div className="option-crest">
+                  <span>{o.id}</span>
+                </div>
+                <span className="option-text">{o.text}</span>
+                {showCorrect && <CheckCircle2 size={18} className="option-status-icon ok" />}
+                {showWrong && <ShieldAlert size={18} className="option-status-icon bad" />}
+              </button>
+            );
+          })}
+        </div>
+
+        {checked && (
+          <div className={`answer-feedback-banner ${isRight ? "victory" : "defeat"}`}>
+            <div className="feedback-header">
+              {isRight ? (
+                <>
+                  <CheckCircle2 size={22} className="feedback-icon ok" />
+                  <div>
+                    <b>CHÍNH XÁC! TẤN CÔNG THÀNH CÔNG!</b>
+                    <p>Đáp án đúng: {q.correctAnswerIds.join(", ")}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ShieldAlert size={22} className="feedback-icon bad" />
+                  <div>
+                    <b>CHƯA CHÍNH XÁC! ĐÃ BỊ DÍNH BẪY!</b>
+                    <p>Đáp án chính xác phải là: {q.correctAnswerIds.join(", ")}</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {q.explanation && (
+              <div className="tactical-debrief">
+                <div className="debrief-label">
+                  <Lightbulb size={14} /> GIẢI MÃ BÍ KÍP &amp; PHÂN TÍCH TÌNH HUỐNG:
+                </div>
+                <p>{q.explanation}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="action-row">
+          {!checked ? (
+            <button
+              disabled={
+                q.type === "single"
+                  ? selected.length !== 1
+                  : selected.length !== (q.requiredAnswers || 2)
+              }
+              className="btn primary"
+              onClick={handleConfirm}
+            >
+              <Swords size={18} /> Xác nhận đáp án
+            </button>
+          ) : (
+            <button className="btn primary" onClick={next}>
+              {idx === questions.length - 1 ? (
+                <>
+                  <Trophy size={18} /> Xem kết quả lượt luyện tập
+                </>
+              ) : (
+                <>
+                  Câu kế tiếp <ChevronRight size={18} />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FreeStudyZone({ data }: { data: SubjectData }) {
+  const [activeSubTab, setActiveSubTab] = useState<"codex" | "practice">("codex");
+  const [selectedChapter, setSelectedChapter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [practiceConfig, setPracticeConfig] = useState<{
+    chapterId: string;
+    count: number;
+    difficulty: string;
+  }>({
+    chapterId: "all",
+    count: 10,
+    difficulty: "all",
+  });
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [practiceScore, setPracticeScore] = useState<number | null>(null);
+
+  const filteredConcepts = useMemo(() => {
+    let list = data.knowledge;
+    if (selectedChapter !== "all") {
+      list = list.filter((k) => k.chapterId === selectedChapter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (k) =>
+          k.title.toLowerCase().includes(q) ||
+          k.summary.some((s) => s.toLowerCase().includes(q)) ||
+          lessonKeywords(k).some((w) => w.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [data.knowledge, selectedChapter, searchQuery]);
+
+  const practiceQuestions = useMemo(() => {
+    let pool = data.questions;
+    if (practiceConfig.chapterId !== "all") {
+      pool = pool.filter((q) => q.chapterId === practiceConfig.chapterId);
+    }
+    if (practiceConfig.difficulty !== "all") {
+      pool = pool.filter((q) => q.difficulty === Number(practiceConfig.difficulty));
+    }
+    return shuffle(pool).slice(0, practiceConfig.count);
+  }, [data.questions, practiceConfig]);
+
+  if (isPracticing) {
+    return (
+      <div className="free-practice-session">
+        <div className="free-practice-header">
+          <button
+            className="btn ghost back-to-free-btn"
+            onClick={() => {
+              sound.playClick();
+              setIsPracticing(false);
+              setPracticeScore(null);
+            }}
+          >
+            <ChevronLeft size={16} /> Thoát Luyện Tập Tự Do
+          </button>
+          <span className="free-practice-badge">
+            <Sparkles size={14} /> CHẾ ĐỘ LUYỆN TẬP TỰ DO (KHÔNG TÍNH SAO KHÓA ẢI)
+          </span>
+        </div>
+
+        {practiceScore !== null ? (
+          <div className="free-practice-result-card">
+            <Trophy size={48} className="result-trophy-icon" />
+            <h2>Hoàn thành Luyện tập Tự do!</h2>
+            <div className="free-result-score">
+              <span>Độ chính xác:</span>
+              <b>{practiceScore}%</b>
+            </div>
+            <p>
+              Bạn đã hoàn thành lượt luyện tập tự do {practiceQuestions.length} câu.
+            </p>
+            <div className="result-actions" style={{ display: "flex", gap: "10px" }}>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  sound.playClick();
+                  setPracticeScore(null);
+                }}
+              >
+                <RotateCcw size={16} /> Luyện tập lượt mới
+              </button>
+              <button
+                className="btn ghost"
+                onClick={() => {
+                  sound.playClick();
+                  setIsPracticing(false);
+                  setPracticeScore(null);
+                }}
+              >
+                Quay lại Thư tịch
+              </button>
+            </div>
+          </div>
+        ) : (
+          <FreeQuizArena
+            questions={practiceQuestions}
+            onFinish={(score) => setPracticeScore(score)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <section className="free-study-zone">
+      <div className="free-study-subnav">
+        <button
+          className={`free-subnav-btn ${activeSubTab === "codex" ? "active" : ""}`}
+          onClick={() => {
+            sound.playClick();
+            setActiveSubTab("codex");
+          }}
+        >
+          <BookOpen size={16} /> Thư Viện Bí Kíp ({data.knowledge.length} Khái niệm)
+        </button>
+        <button
+          className={`free-subnav-btn ${activeSubTab === "practice" ? "active" : ""}`}
+          onClick={() => {
+            sound.playClick();
+            setActiveSubTab("practice");
+          }}
+        >
+          <Swords size={16} /> Đấu Trường Tự Do ({data.stats.clean} Câu hỏi)
+        </button>
+      </div>
+
+      {activeSubTab === "codex" ? (
+        <div className="free-codex-container">
+          <div className="codex-controls">
+            <div className="codex-search-input">
+              <Search size={16} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm bí kíp, từ khóa, khái niệm..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button className="clear-search-btn" onClick={() => setSearchQuery("")}>
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="codex-chapter-filter">
+              <select
+                value={selectedChapter}
+                onChange={(e) => setSelectedChapter(e.target.value)}
+              >
+                <option value="all">Tất cả các chương ({data.chapters.length} chương)</option>
+                {data.chapters.map((ch, idx) => (
+                  <option key={ch.id} value={ch.id}>
+                    Chương {idx + 1}: {ch.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="codex-grid">
+            {filteredConcepts.length === 0 ? (
+              <div className="empty-codex">
+                <Search size={36} />
+                <p>Không tìm thấy khái niệm phù hợp với từ khóa "{searchQuery}"</p>
+              </div>
+            ) : (
+              filteredConcepts.map((item) => {
+                const viTitle = translateConceptTitle(item.title);
+                return (
+                  <div key={item.id} className="codex-concept-card">
+                    <div className="codex-card-header">
+                      <div className="concept-id-tag">
+                        <KeyRound size={12} /> {item.chapterId}
+                      </div>
+                      <Link
+                        to={`/world/${data.id}/stage/${encodeURIComponent(item.chapterId)}`}
+                        onClick={() => sound.playClick()}
+                        className="study-stage-link"
+                      >
+                        Vào học ải này <ChevronRight size={13} />
+                      </Link>
+                    </div>
+
+                    <h3 className="concept-card-title">{item.title}</h3>
+                    {viTitle !== item.title && (
+                      <span className="concept-card-vi-tag">
+                        <Languages size={12} /> {viTitle}
+                      </span>
+                    )}
+
+                    <div className="concept-card-body">
+                      {item.summary.map((line, lIdx) => {
+                        const viLine = translateConceptSentence(line);
+                        return (
+                          <div key={lIdx} className="codex-bullet-item">
+                            <p className="en-line">• {line}</p>
+                            {viLine !== line && (
+                              <p className="vi-line">↳ <b>Dịch:</b> {viLine}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {(() => {
+                      const kws = lessonKeywords(item);
+                      if (!kws.length) return null;
+                      return (
+                        <div className="codex-keywords-row">
+                          <small><Sparkles size={11} /> TỪ KHÓA:</small>
+                          <div className="loot-tags">
+                            {kws.map((kw, kIdx) => (
+                              <span key={kIdx} className="loot-chip">
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="free-practice-setup-card">
+          <div className="practice-setup-header">
+            <div className="setup-icon-circle">
+              <Swords size={28} />
+            </div>
+            <div>
+              <h3>Tùy Chọn Đấu Trường Tự Do</h3>
+              <p>Luyện tập không giới hạn theo chương hoặc tổng hợp toàn bộ môn học</p>
+            </div>
+          </div>
+
+          <div className="setup-fields-grid">
+            <div className="setup-field">
+              <label>Phạm vi chương kiến thức:</label>
+              <select
+                value={practiceConfig.chapterId}
+                onChange={(e) =>
+                  setPracticeConfig((c) => ({ ...c, chapterId: e.target.value }))
+                }
+              >
+                <option value="all">Toàn bộ môn học ({data.stats.clean} câu hỏi)</option>
+                {data.chapters.map((ch, idx) => (
+                  <option key={ch.id} value={ch.id}>
+                    Chương {idx + 1}: {ch.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="setup-field">
+              <label>Số lượng câu hỏi:</label>
+              <div className="count-selector-btns">
+                {[5, 10, 20, 30].map((num) => (
+                  <button
+                    key={num}
+                    className={`count-btn ${practiceConfig.count === num ? "active" : ""}`}
+                    onClick={() => setPracticeConfig((c) => ({ ...c, count: num }))}
+                  >
+                    {num} câu
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="setup-field">
+              <label>Độ khó mục tiêu:</label>
+              <select
+                value={practiceConfig.difficulty}
+                onChange={(e) =>
+                  setPracticeConfig((c) => ({ ...c, difficulty: e.target.value }))
+                }
+              >
+                <option value="all">Tất cả mức độ</option>
+                <option value="easy">Dễ (Easy)</option>
+                <option value="medium">Trung bình (Medium)</option>
+                <option value="hard">Nâng cao (Hard)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="setup-footer">
+            <button
+              className="btn primary start-free-btn"
+              onClick={() => {
+                sound.playClick();
+                setIsPracticing(true);
+                setPracticeScore(null);
+              }}
+            >
+              <Swords size={18} /> Bắt đầu Luyện tập Tự do ({practiceQuestions.length} câu)
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function World() {
   const { id } = useParams();
   const data = useSubject(id);
   const [progress] = useState(loadProgress);
+  const [worldMode, setWorldMode] = useState<"campaign" | "free">("campaign");
+  const [lockedNotice, setLockedNotice] = useState<{
+    stageNum: number;
+    stageTitle: string;
+    prevStageNum: number;
+    prevStageTitle: string;
+  } | null>(null);
 
   if (!data) {
     return (
@@ -375,81 +940,123 @@ function World() {
       </section>
 
       <div className="mode-tabs">
-        <button className="mode-tab active" onClick={() => sound.playClick()}>
+        <button
+          className={`mode-tab ${worldMode === "campaign" ? "active" : ""}`}
+          onClick={() => {
+            sound.playClick();
+            setWorldMode("campaign");
+          }}
+        >
           <Gamepad2 size={16} /> Chiến dịch Vượt ải
         </button>
-        <button className="mode-tab" onClick={() => sound.playClick()}>
-          <BookOpen size={16} /> Thư tịch Tự do
+        <button
+          className={`mode-tab ${worldMode === "free" ? "active" : ""}`}
+          onClick={() => {
+            sound.playClick();
+            setWorldMode("free");
+          }}
+        >
+          <BookOpen size={16} /> Học Tự Do (Thư tịch &amp; Luyện tập)
         </button>
       </div>
 
-      <section className="map-path">
-        {data.chapters.map((ch, i) => {
-          const stageId = `${data.id}:${ch.id}`;
-          const p = progress[stageId];
-          const isBoss = i === data.chapters.length - 1;
-          const locked = i > 0 && !progress[`${data.id}:${data.chapters[i - 1].id}`]?.stars;
-
-          return (
-            <div className={`stage-row ${i % 2 ? "right" : "left"}`} key={ch.id}>
-              <div className="path-line" />
-              <Link
-                aria-disabled={locked}
-                onClick={(e) => {
-                  if (locked) {
-                    e.preventDefault();
-                    sound.playWrong();
-                  } else {
-                    sound.playClick();
-                  }
-                }}
-                to={`/world/${data.id}/stage/${encodeURIComponent(ch.id)}`}
-                className={`stage-node ${locked ? "locked" : "unlocked"} ${isBoss ? "boss-stage" : ""}`}
-              >
-                <div className="node-ring">
-                  {locked ? (
-                    <LockKeyhole size={24} />
-                  ) : isBoss ? (
-                    <Skull size={26} className="boss-skull" />
-                  ) : p?.stars ? (
-                    <CheckCircle2 size={24} />
-                  ) : (
-                    <span>{i + 1}</span>
-                  )}
-                </div>
-
-                <div className="stage-info">
-                  <div className="stage-tag">
-                    {isBoss ? (
-                      <span className="boss-tag">
-                        <Swords size={12} /> BOSS REGION
-                      </span>
-                    ) : (
-                      <span>
-                        <Map size={12} /> REGION {i + 1}
-                      </span>
-                    )}
-                  </div>
-                  <h3>{ch.title}</h3>
-                  <p>
-                    {data.questions.filter((q) => q.chapterId === ch.id && q.qualityStatus === "clean").length} thử
-                    thách khả dụng
-                  </p>
-                  <div className="stage-status-row">
-                    {p ? (
-                      <Stars n={p.stars} />
-                    ) : (
-                      <span className={`status-pill ${locked ? "locked" : "ready"}`}>
-                        {locked ? "Chưa mở khóa" : "Sẵn sàng vượt ải"}
-                      </span>
-                    )}
+      {worldMode === "free" ? (
+        <FreeStudyZone data={data} />
+      ) : (
+        <>
+          {lockedNotice && (
+            <div className="locked-stage-banner">
+              <div className="locked-stage-banner-left">
+                <LockKeyhole size={22} />
+                <div>
+                  <b>Ải {lockedNotice.stageNum} ({lockedNotice.stageTitle}) đang bị phong ấn!</b>
+                  <div>
+                    Lý do: Bạn cần vượt qua <b>Ải {lockedNotice.prevStageNum} ({lockedNotice.prevStageTitle})</b> với tối thiểu 1 sao (đạt $\ge 70\%$ độ chính xác) để khai mở ải này.
                   </div>
                 </div>
-              </Link>
+              </div>
+              <button className="dismiss-banner-btn" onClick={() => setLockedNotice(null)}>
+                Đã hiểu
+              </button>
             </div>
-          );
-        })}
-      </section>
+          )}
+
+          <section className="map-path">
+            {data.chapters.map((ch, i) => {
+              const stageId = `${data.id}:${ch.id}`;
+              const p = progress[stageId];
+              const isBoss = i === data.chapters.length - 1;
+              const locked = i > 0 && !progress[`${data.id}:${data.chapters[i - 1].id}`]?.stars;
+
+              return (
+                <div className={`stage-row ${i % 2 ? "right" : "left"}`} key={ch.id}>
+                  <div className="path-line" />
+                  <Link
+                    aria-disabled={locked}
+                    onClick={(e) => {
+                      if (locked) {
+                        e.preventDefault();
+                        sound.playWrong();
+                        setLockedNotice({
+                          stageNum: i + 1,
+                          stageTitle: ch.title,
+                          prevStageNum: i,
+                          prevStageTitle: data.chapters[i - 1]?.title || "",
+                        });
+                      } else {
+                        sound.playClick();
+                        setLockedNotice(null);
+                      }
+                    }}
+                    to={`/world/${data.id}/stage/${encodeURIComponent(ch.id)}`}
+                    className={`stage-node ${locked ? "locked" : "unlocked"} ${isBoss ? "boss-stage" : ""}`}
+                  >
+                    <div className="node-ring">
+                      {locked ? (
+                        <LockKeyhole size={24} />
+                      ) : isBoss ? (
+                        <Skull size={26} className="boss-skull" />
+                      ) : p?.stars ? (
+                        <CheckCircle2 size={24} />
+                      ) : (
+                        <span>{i + 1}</span>
+                      )}
+                    </div>
+
+                    <div className="stage-info">
+                      <div className="stage-tag">
+                        {isBoss ? (
+                          <span className="boss-tag">
+                            <Swords size={12} /> BOSS REGION
+                          </span>
+                        ) : (
+                          <span>
+                            <Map size={12} /> REGION {i + 1}
+                          </span>
+                        )}
+                      </div>
+                      <h3>{ch.title}</h3>
+                      <p>
+                        {data.questions.filter((q) => q.chapterId === ch.id && q.qualityStatus === "clean").length} thử
+                        thách khả dụng
+                      </p>
+                      <div className="stage-status-row">
+                        {p ? (
+                          <Stars n={p.stars} />
+                        ) : (
+                          <span className={`status-pill ${locked ? "locked" : "ready"}`}>
+                            {locked ? "Chưa mở khóa" : "Sẵn sàng vượt ải"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </section>
+        </>
+      )}
     </Shell>
   );
 }
@@ -457,10 +1064,12 @@ function World() {
 function InteractiveLesson({
   data,
   chapterId,
+  isCompletedBefore,
   onComplete,
 }: {
   data: SubjectData;
   chapterId: string;
+  isCompletedBefore?: boolean;
   onComplete: () => void;
 }) {
   const knowledge = data.knowledge.filter((k) => k.chapterId === chapterId);
@@ -471,6 +1080,7 @@ function InteractiveLesson({
   const [selected, setSelected] = useState("");
   const [checked, setChecked] = useState(false);
   const [results, setResults] = useState<Record<string, boolean>>({});
+  const [lessonLangMode, setLessonLangMode] = useState<"en" | "vi" | "bilingual">("bilingual");
 
   if (!steps.length) {
     return (
@@ -492,12 +1102,21 @@ function InteractiveLesson({
   const keywords = lessonKeywords(step.concept);
   const stats = checkpointStats(steps, results);
   const lastStep = index === steps.length - 1;
-  const gateReady = allCheckpointsPassed(steps, results);
+  const gateReady = Boolean(isCompletedBefore || allCheckpointsPassed(steps, results));
+
+  const checkpointSteps = useMemo(
+    () =>
+      steps
+        .map((s, i) => ({ step: s, stepIndex: i }))
+        .filter((x) => x.step.type === "checkpoint"),
+    [steps]
+  );
 
   const advance = () => {
     sound.playClick();
     if (lastStep) {
       if (gateReady) {
+        markLessonCompleted(`${data.id}:${chapterId}`);
         sound.playGateOpen();
         onComplete();
       }
@@ -525,6 +1144,13 @@ function InteractiveLesson({
     }
   };
 
+  const jumpToStep = (stepIdx: number) => {
+    sound.playClick();
+    setIndex(stepIdx);
+    setChecked(false);
+    setSelected("");
+  };
+
   const icon =
     step.type === "trap" ? (
       <AlertTriangle size={36} />
@@ -540,6 +1166,24 @@ function InteractiveLesson({
 
   return (
     <section className={`lesson-shell lesson-${step.type}`}>
+      {isCompletedBefore && (
+        <div className="lesson-shortcut-banner">
+          <div className="shortcut-left">
+            <CheckCircle2 size={18} />
+            <span>Bạn đã hoàn thành bí kíp bài học này trước đó.</span>
+          </div>
+          <button
+            className="btn primary shortcut-btn"
+            onClick={() => {
+              sound.playClick();
+              onComplete();
+            }}
+          >
+            <Swords size={16} /> Vào thẳng Đấu trường
+          </button>
+        </div>
+      )}
+
       <div className="lesson-progress-hud">
         <div className="progress-labels">
           <span>
@@ -568,10 +1212,51 @@ function InteractiveLesson({
         </aside>
 
         <div className="lesson-body">
-          <div className="eyebrow">
-            <Sparkles size={14} /> {step.eyebrow}
+          <div className="lang-switcher-row" style={{ marginBottom: 12 }}>
+            <div className="eyebrow" style={{ margin: 0 }}>
+              <Sparkles size={14} /> {step.eyebrow}
+            </div>
+
+            <div className="lang-switcher">
+              <button
+                className={`lang-btn ${lessonLangMode === "en" ? "active" : ""}`}
+                onClick={() => {
+                  sound.playClick();
+                  setLessonLangMode("en");
+                }}
+                title="Xem bí kíp gốc Tiếng Anh"
+              >
+                EN
+              </button>
+              <button
+                className={`lang-btn ${lessonLangMode === "vi" ? "active" : ""}`}
+                onClick={() => {
+                  sound.playClick();
+                  setLessonLangMode("vi");
+                }}
+                title="Dịch lý thuyết sang Tiếng Việt"
+              >
+                VI
+              </button>
+              <button
+                className={`lang-btn ${lessonLangMode === "bilingual" ? "active" : ""}`}
+                onClick={() => {
+                  sound.playClick();
+                  setLessonLangMode("bilingual");
+                }}
+                title="Chế độ Song ngữ Anh - Việt"
+              >
+                <Languages size={13} /> Song ngữ
+              </button>
+            </div>
           </div>
-          <h2>{step.title}</h2>
+
+          <h2>{lessonLangMode === "vi" ? translateConceptTitle(step.title) : step.title}</h2>
+          {lessonLangMode === "bilingual" && translateConceptTitle(step.title) !== step.title && (
+            <div className="concept-vi-title-tag">
+              <Languages size={13} /> {translateConceptTitle(step.title)}
+            </div>
+          )}
 
           {step.type === "intro" && (
             <div className="mission-copy">
@@ -583,13 +1268,47 @@ function InteractiveLesson({
             </div>
           )}
 
-          {step.content.map((text, i) => (
-            <p className="lesson-copy" key={i}>
-              {highlightKeywords(text.replace(/\*\*/g, ""), keywords).map((part, j) =>
-                part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
-              )}
-            </p>
-          ))}
+          {step.content.map((text, i) => {
+            const cleanText = text.replace(/\*\*/g, "");
+            const viText = translateConceptSentence(cleanText);
+            const hasVietnamese = viText !== cleanText;
+
+            if (lessonLangMode === "vi") {
+              return (
+                <p className="lesson-copy" key={i}>
+                  {viText}
+                </p>
+              );
+            }
+
+            if (lessonLangMode === "bilingual") {
+              return (
+                <div className="bilingual-lesson-item" key={i}>
+                  <p className="lesson-copy en-original">
+                    {highlightKeywords(cleanText, keywords).map((part, j) =>
+                      part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
+                    )}
+                  </p>
+                  {hasVietnamese && (
+                    <div className="vi-translation-sub">
+                      <Languages size={13} />
+                      <span>
+                        <b>Dịch nghĩa:</b> {viText}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <p className="lesson-copy" key={i}>
+                {highlightKeywords(cleanText, keywords).map((part, j) =>
+                  part.highlight ? <mark key={j}>{part.text}</mark> : <span key={j}>{part.text}</span>
+                )}
+              </p>
+            );
+          })}
 
           {keywords.length > 0 && step.type === "concept" && (
             <div className="keyword-loot">
@@ -661,14 +1380,57 @@ function InteractiveLesson({
             <div className={`gate ${gateReady ? "open" : "closed"}`}>
               <div className="gate-icon">{gateReady ? <DoorOpen size={28} /> : <LockKeyhole size={28} />}</div>
               <div className="gate-info">
-                <b>{gateReady ? "Cánh cổng đã mở rộng!" : "Cánh cổng vẫn bị phong ấn"}</b>
-                <span>
-                  Checkpoint hoàn thành: {stats.passed} / {stats.total}
-                </span>
-                {!gateReady && (
-                  <p>
-                    Hãy quay lại các checkpoint chưa vượt qua bằng nút "Xem lại", hoàn thành chính xác để mở cổng tiến
-                    vào thử thách.
+                <b>{gateReady ? "Cánh cổng đã mở rộng!" : "Cánh cổng vẫn đang bị phong ấn ma thuật"}</b>
+                <div className="gate-status-pill">
+                  {gateReady ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+                  <span>
+                    Checkpoint hoàn thành: {stats.passed} / {stats.total}
+                  </span>
+                </div>
+
+                {!gateReady ? (
+                  <>
+                    <p className="gate-reason-desc">
+                      <b>Lý do chưa mở:</b> Bạn cần giải mã và trả lời đúng <b>tất cả các Checkpoint kiến thức</b> bên dưới để chứng minh đã nắm vững bài học trước khi bước vào Đấu trường:
+                    </p>
+
+                    <div className="gate-checklist">
+                      <div className="gate-checklist-header">
+                        <AlertTriangle size={14} /> Danh sách Checkpoint cần hoàn thành:
+                      </div>
+                      {checkpointSteps.map((item, idx) => {
+                        const isPassed = results[item.step.id] === true;
+                        const isAttempted = item.step.id in results;
+                        return (
+                          <div key={item.step.id} className={`gate-check-item ${isPassed ? "passed" : "pending"}`}>
+                            <div className="gate-check-left">
+                              {isPassed ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                              <div className="check-item-info">
+                                <b>
+                                  Checkpoint {idx + 1}: {item.step.concept?.title || `Mảnh kiến thức ${idx + 1}`}
+                                </b>
+                                <span>
+                                  {isPassed
+                                    ? "Đã giải mã chính xác"
+                                    : isAttempted
+                                    ? "Chưa chọn đúng đáp án"
+                                    : "Chưa hoàn thành checkpoint"}
+                                </span>
+                              </div>
+                            </div>
+                            {!isPassed && (
+                              <button className="jump-btn" onClick={() => jumpToStep(item.stepIndex)}>
+                                Làm ngay <ChevronRight size={14} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <p className="gate-reason-desc">
+                    Tuyệt vời! Bạn đã vượt qua các checkpoint kiến thức. Hãy tiến vào Đấu trường để thử thách bản lĩnh!
                   </p>
                 )}
               </div>
@@ -699,7 +1461,20 @@ function InteractiveLesson({
                 <RotateCcw size={16} /> Làm lại câu này
               </button>
             ) : (
-              <button disabled={lastStep && !gateReady} className="btn primary" onClick={advance}>
+              <button
+                className={`btn primary ${lastStep && !gateReady ? "locked-gate-btn" : ""}`}
+                onClick={() => {
+                  if (lastStep && !gateReady) {
+                    sound.playWrong();
+                    const firstUnpassed = checkpointSteps.find((x) => results[x.step.id] !== true);
+                    if (firstUnpassed) {
+                      jumpToStep(firstUnpassed.stepIndex);
+                    }
+                  } else {
+                    advance();
+                  }
+                }}
+              >
                 {lastStep ? (
                   gateReady ? (
                     <>
@@ -707,7 +1482,7 @@ function InteractiveLesson({
                     </>
                   ) : (
                     <>
-                      <LockKeyhole size={16} /> Cổng chưa mở
+                      <LockKeyhole size={16} /> Cổng khóa (Còn {stats.total - stats.passed} câu chưa đạt) • Làm ngay
                     </>
                   )
                 ) : (
@@ -728,11 +1503,23 @@ function Stage() {
   const { id, chapterId } = useParams();
   const data = useSubject(id);
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<"learn" | "quiz">("learn");
+  const cid = decodeURIComponent(chapterId || "");
+  const [progress, setProgress] = useState(loadProgress);
+
+  const stageKey = data ? `${data.id}:${cid}` : "";
+  const stageProgress = stageKey ? progress[stageKey] : undefined;
+  const isEligibleForQuiz = Boolean(stageProgress?.lessonCompleted || (stageProgress?.stars && stageProgress.stars > 0));
+
+  const [phase, setPhase] = useState<"learn" | "quiz">(() => (isEligibleForQuiz ? "quiz" : "learn"));
 
   useEffect(() => {
-    setPhase("learn");
-  }, [id, chapterId]);
+    const p = loadProgress();
+    setProgress(p);
+    const sKey = id ? `${id}:${cid}` : "";
+    const sProgress = sKey ? p[sKey] : undefined;
+    const isEligible = Boolean(sProgress?.lessonCompleted || (sProgress?.stars && sProgress.stars > 0));
+    setPhase(isEligible ? "quiz" : "learn");
+  }, [id, cid]);
 
   if (!data) {
     return (
@@ -745,9 +1532,17 @@ function Stage() {
     );
   }
 
-  const cid = decodeURIComponent(chapterId || "");
   const chapter = data.chapters.find((c) => c.id === cid)!;
   const stageNum = data.chapters.findIndex((c) => c.id === cid) + 1;
+
+  const handleSwitchToQuiz = () => {
+    if (isEligibleForQuiz) {
+      sound.playClick();
+      setPhase("quiz");
+    } else {
+      sound.playWrong();
+    }
+  };
 
   return (
     <Shell>
@@ -761,15 +1556,26 @@ function Stage() {
         </span>
         <h1>{chapter?.title}</h1>
         <div className="phase-steps">
-          <div className={`phase-item ${phase === "learn" ? "active" : "done"}`}>
+          <button
+            className={`phase-step-btn ${phase === "learn" ? "active" : isEligibleForQuiz ? "done" : ""}`}
+            onClick={() => {
+              sound.playClick();
+              setPhase("learn");
+            }}
+          >
             <BookOpen size={15} /> 1. Sách bí kíp
-          </div>
+          </button>
           <div className="phase-line" />
-          <div className={`phase-item ${phase === "quiz" ? "active" : ""}`}>
-            <Swords size={15} /> 2. Đấu trường
-          </div>
+          <button
+            className={`phase-step-btn ${phase === "quiz" ? "active" : ""}`}
+            disabled={!isEligibleForQuiz}
+            onClick={handleSwitchToQuiz}
+            title={!isEligibleForQuiz ? "Cần hoàn thành bí kíp bài học để mở Đấu trường" : "Vào Đấu trường thử thách"}
+          >
+            <Swords size={15} /> 2. Đấu trường {!isEligibleForQuiz && <LockKeyhole size={12} />}
+          </button>
           <div className="phase-line" />
-          <div className="phase-item">
+          <div className="phase-step-btn" style={{ opacity: 0.5, cursor: "default" }}>
             <Trophy size={15} /> 3. Kết quả
           </div>
         </div>
@@ -780,7 +1586,10 @@ function Stage() {
           key={`${data.id}:${cid}`}
           data={data}
           chapterId={cid}
+          isCompletedBefore={isEligibleForQuiz}
           onComplete={() => {
+            markLessonCompleted(`${data.id}:${cid}`);
+            setProgress(loadProgress());
             sound.playGateOpen();
             setPhase("quiz");
           }}
@@ -814,6 +1623,7 @@ function Quiz({
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [langMode, setLangMode] = useState<"en" | "vi" | "bilingual">("bilingual");
 
   const q = questions[idx];
   if (!q) {
@@ -858,6 +1668,8 @@ function Quiz({
     }
   };
 
+  const translatedPrompt = translateQuestionPrompt(q.question);
+
   return (
     <section className="battle-arena">
       <div className="battle-hud-top">
@@ -882,16 +1694,62 @@ function Quiz({
       </div>
 
       <div className="question-card">
-        <div className="question-meta-row">
-          <span className="difficulty-pill">
-            <Target size={12} /> ĐỘ KHÓ {q.difficulty}
-          </span>
-          <span className="question-type-pill">
-            {q.type === "multiple" ? `CHỌN ${q.requiredAnswers} ĐÁP ÁN` : "CHỌN 1 ĐÁP ÁN"}
-          </span>
+        <div className="lang-switcher-row">
+          <div className="question-meta-row" style={{ margin: 0 }}>
+            <span className="difficulty-pill">
+              <Target size={12} /> ĐỘ KHÓ {q.difficulty}
+            </span>
+            <span className="question-type-pill">
+              {q.type === "multiple" ? `CHỌN ${q.requiredAnswers} ĐÁP ÁN` : "CHỌN 1 ĐÁP ÁN"}
+            </span>
+          </div>
+
+          <div className="lang-switcher">
+            <button
+              className={`lang-btn ${langMode === "en" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("en");
+              }}
+              title="Xem câu hỏi gốc Tiếng Anh"
+            >
+              EN
+            </button>
+            <button
+              className={`lang-btn ${langMode === "vi" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("vi");
+              }}
+              title="Dịch câu hỏi sang Tiếng Việt"
+            >
+              VI
+            </button>
+            <button
+              className={`lang-btn ${langMode === "bilingual" ? "active" : ""}`}
+              onClick={() => {
+                sound.playClick();
+                setLangMode("bilingual");
+              }}
+              title="Chế độ Song ngữ Anh - Việt"
+            >
+              <Languages size={13} /> Song ngữ
+            </button>
+          </div>
         </div>
 
-        <h2 className="question-title">{q.question}</h2>
+        <div className="question-title-container">
+          <h2 className="question-title">{langMode === "vi" ? translatedPrompt : q.question}</h2>
+
+          {langMode === "bilingual" && (
+            <div className="bilingual-translation-box">
+              <div className="bilingual-tag">
+                <Languages size={12} /> BẢN DỊCH &amp; GIẢI NGHĨA TIẾNG VIỆT:
+              </div>
+              <p className="bilingual-text">{translatedPrompt}</p>
+            </div>
+          )}
+        </div>
 
         <div className="options-grid">
           {q.options.map((o) => {
@@ -978,6 +1836,7 @@ function Result() {
       score / 100
     );
     saveProgress(p);
+    recordDailyActivity();
     sound.playVictory();
   }, [id, chapterId, score]);
 

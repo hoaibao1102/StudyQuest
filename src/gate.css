@@ -1,40 +1,46 @@
 /* Gate of Trials Styles - Clean Line RPG Theme */
 .gate {
   margin-top: 24px;
-  padding: 22px;
-  border-radius: 14px;
+  padding: 24px;
+  border-radius: 16px;
   display: flex;
-  gap: 18px;
+  gap: 20px;
   align-items: flex-start;
+  transition: all 0.3s ease;
 }
 
 .gate.open {
   background: rgba(16, 185, 129, 0.12);
   border: 1px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
 }
 
 .gate.closed {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.1);
 }
 
 .gate-icon {
   width: 56px;
   height: 56px;
   min-width: 56px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
+  flex-shrink: 0;
 }
 
 .gate.open .gate-icon {
   background: rgba(16, 185, 129, 0.25);
   color: #34d399;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
 }
 
 .gate.closed .gate-icon {
   background: rgba(245, 158, 11, 0.2);
   color: #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
 }
 
 .gate-icon svg {
@@ -42,35 +48,208 @@
   height: 28px;
 }
 
-.gate b {
+.gate-info {
+  flex: 1;
+}
+
+.gate-info b {
   display: block;
   font-family: var(--font-title, sans-serif);
-  font-size: 18px;
-  margin-bottom: 4px;
+  font-size: 19px;
+  margin-bottom: 6px;
   color: #ffffff;
 }
 
-.gate span {
-  display: inline-block;
+.gate-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 3px 10px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   font-family: var(--font-game, sans-serif);
   font-size: 12px;
   font-weight: 700;
 }
 
-.gate.open span {
+.gate.open .gate-status-pill {
   color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.gate.closed span {
+.gate.closed .gate-status-pill {
   color: #fde047;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.gate p {
+.gate-reason-desc {
   font-size: 13px;
+  color: #cbd5e1;
+  margin: 10px 0 16px;
+  line-height: 1.6;
+}
+
+/* Detailed Gate Checklist */
+.gate-checklist {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gate-checklist-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-game, sans-serif);
+  font-size: 12px;
+  font-weight: 800;
+  color: #fbbf24;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.gate-check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.gate-check-item.passed {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.gate-check-item.pending {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.gate-check-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.gate-check-item.passed .gate-check-left svg {
+  color: #34d399;
+}
+
+.gate-check-item.pending .gate-check-left svg {
+  color: #f59e0b;
+}
+
+.check-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-item-info b {
+  font-family: var(--font-title, sans-serif);
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.check-item-info span {
+  font-size: 11px;
   color: #94a3b8;
-  margin-top: 8px;
+  padding: 0;
+  background: transparent;
+}
+
+.jump-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fef08a;
+  font-family: var(--font-game, sans-serif);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jump-btn:hover {
+  background: #f59e0b;
+  color: #1a0d00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.locked-gate-btn {
+  background: linear-gradient(135deg, #d97706, #92400e) !important;
+  color: #fff !important;
+  border: 1px solid rgba(251, 191, 36, 0.4) !important;
+  box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35) !important;
+}
+
+/* Locked Stage Notice on World Map */
+.locked-stage-banner {
+  margin: 20px auto 0;
+  max-width: 780px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  animation: slideDown 0.25s ease-out;
+}
+
+.locked-stage-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fecaca;
+  font-size: 13px;
   line-height: 1.5;
+}
+
+.locked-stage-banner-left svg {
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+.locked-stage-banner-left b {
+  color: #ffffff;
+}
+
+.dismiss-banner-btn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-game, sans-serif);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.dismiss-banner-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
