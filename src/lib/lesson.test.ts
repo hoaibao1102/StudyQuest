@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildLessonSteps, highlightKeywords } from "./lesson";
+import { buildLessonSteps, highlightKeywords, allCheckpointsPassed } from "./lesson";
 import type { Knowledge, Question } from "../types";
 
 const knowledge: Knowledge[] = [{
@@ -27,6 +27,12 @@ describe("interactive lesson builder", () => {
     const withExample = [{...knowledge[0], summary:["Tween đổi giá trị từ đầu đến cuối, ví dụ: từ 0 đến 100."]}];
     const steps = buildLessonSteps(withExample, questions);
     expect(steps.find(s=>s.type==="example")?.content[0]).toContain("từ 0 đến 100");
+  });
+  test("blocks the challenge until every checkpoint is answered correctly", () => {
+    const steps = buildLessonSteps(knowledge, questions);
+    expect(allCheckpointsPassed(steps, {})).toBe(false);
+    expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": false })).toBe(false);
+    expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": true })).toBe(true);
   });
   test("highlights meaningful terms without matching tiny words", () => {
     const parts = highlightKeywords("CurvedAnimation dùng AnimationController và bounceOut", ["CurvedAnimation","AnimationController","bounceOut","và"]);

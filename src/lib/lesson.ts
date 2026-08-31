@@ -48,3 +48,13 @@ export function lessonKeywords(concept?:Knowledge):string[] {
   if (!concept) return [];
   return concept.title.split(/\s+|\/|&/).map(x=>x.replace(/[^\p{L}\p{N}-]/gu,"")).filter(x=>x.length>=5).slice(0,8);
 }
+
+export function allCheckpointsPassed(steps: LessonStep[], results: Record<string, boolean>): boolean {
+  const checkpoints = steps.filter(s => s.type === "checkpoint");
+  return checkpoints.every(s => results[s.id] === true);
+}
+
+export function checkpointStats(steps: LessonStep[], results: Record<string, boolean>) {
+  const checkpoints = steps.filter(s => s.type === "checkpoint");
+  return { total: checkpoints.length, passed: checkpoints.filter(s => results[s.id] === true).length };
+}
