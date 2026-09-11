@@ -133,13 +133,13 @@ Các tính năng trên có thể được xem xét ở phiên bản sau.
 
 | Subject ID | Môn | Canonical occurrences | Unique questions | Clean | Flagged | Concepts | Flashcards |
 |---|---|---:|---:|---:|---:|---:|---:|
-| `mln111` | Triết học Mác - Lênin | 420 | 311 | 297 | 14 | 66 | 118 |
+| `mln111` | Triết học Mác - Lênin | 420 | 311 | 297 | 14 | 66 | 127 |
 | `mln122` | Kinh tế chính trị Mác - Lênin | 660 | 435 | 431 | 4 | 20 | 431 |
 | `ite302c` | Ethics in IT / AI Ethics | 780 | 380 | 361 | 19 | 189 | 353 |
 | `prm393` | Mobile Programming | 248 | 158 | 151 | 7 | 87 | 120 |
-| **Tổng** | **4 môn** | **2.108** | **1.284** | **1.240** | **44** | **362** | **1.022** |
+| **Tổng** | **4 môn** | **2.108** | **1.284** | **1.240** | **44** | **362** | **1.031** |
 
-Các số liệu trên là snapshot v0.1 từ README của từng knowledge base. Đây là baseline để kiểm tra parser, không phải cam kết bất biến; khi corpus đổi phải cập nhật `contentVersion`, manifest và báo cáo validation.
+Các số liệu trên là snapshot theo README hiện hành của từng knowledge base; MLN111 Knowledge/Flashcard đã nâng lên v0.2, các question corpus còn lại giữ baseline v0.1. Đây là baseline để kiểm tra parser, không phải cam kết bất biến; khi corpus đổi phải cập nhật `contentVersion`, manifest và báo cáo validation.
 
 ---
 

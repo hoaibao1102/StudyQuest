@@ -60,6 +60,13 @@ export function parseMasterQuestions(text, subject) {
   }).filter(q => q.question && q.options.length >= 2);
 }
 
+export function countConcepts(questions, knowledge) {
+  return new Set([
+    ...questions.map(question => question.conceptId),
+    ...knowledge.map(entry => entry.id),
+  ]).size;
+}
+
 export function parseKnowledge(text, subject) {
   const ids = [...text.matchAll(/^\*\*ID:\*\*\s*`([^`]+)`/gm)];
   return ids.map((m,i) => {

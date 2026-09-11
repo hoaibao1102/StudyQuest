@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseMasterQuestions, normalizeQuestion } from "./parser.mjs";
+import { parseMasterQuestions, normalizeQuestion, countConcepts } from "./parser.mjs";
 
 describe("canonical question parser", () => {
   test("parses MLN hash-format questions", () => {
@@ -42,5 +42,12 @@ describe("canonical question parser", () => {
     expect(q.correctAnswerIds).toEqual([]);
     expect(q.qualityStatus).toBe("ambiguous");
     expect(q.tags).toContain("answer_missing_or_invalid");
+  });
+
+  test("counts concepts from both questions and textbook-only knowledge", () => {
+    expect(countConcepts(
+      [{ conceptId: "MLN111-C1-01" }, { conceptId: "MLN111-C1-01" }],
+      [{ id: "MLN111-C1-01" }, { id: "MLN111-C1-05" }]
+    )).toBe(2);
   });
 });

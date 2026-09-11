@@ -11,9 +11,22 @@ export interface LessonStep {
   question?: Question;
 }
 
+export function selectLessonKnowledge(
+  knowledge: Knowledge[],
+  questionConceptIds: Set<string>,
+  limit = 4,
+): Knowledge[] {
+  if (knowledge.length <= limit) return knowledge;
+  const textbookOnly = knowledge.filter(entry => !questionConceptIds.has(entry.id));
+  const questionBacked = knowledge.filter(entry => questionConceptIds.has(entry.id));
+  if (!textbookOnly.length) return knowledge.slice(0, limit);
+  return [...questionBacked.slice(0, limit - 1), textbookOnly[0]];
+}
+
 export function buildLessonSteps(knowledge: Knowledge[], questions: Question[]): LessonStep[] {
   if (!knowledge.length) return [];
-  const selected = knowledge.slice(0, 4);
+  const questionConceptIds = new Set(questions.map(question => question.conceptId));
+  const selected = selectLessonKnowledge(knowledge, questionConceptIds, 4);
   const steps: LessonStep[] = [{
     id: "intro", type: "intro", eyebrow: "NHIỆM VỤ MỚI",
     title: `Giải mã ${selected.length} mảnh kiến thức`,

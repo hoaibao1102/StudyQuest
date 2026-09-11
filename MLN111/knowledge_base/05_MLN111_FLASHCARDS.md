@@ -1,6 +1,7 @@
 # MLN111 — MASTER FLASHCARDS
 
-**Nguồn:** sinh từ các câu `clean` trong Master Question Bank.  
+**Phiên bản:** v0.2
+**Nguồn:** 118 thẻ sinh từ câu `clean`; 9 thẻ bổ sung từ giáo trình/bài giảng chính thống.
 **Mục đích:** Active recall; không dùng câu `needs_review`.
 
 
@@ -1244,4 +1245,82 @@
 
 **Question ID:** `MLN111-Q-C17F26B4`  
 **Frequency:** 1
+
+---
+
+# FLASHCARDS BỔ SUNG TỪ GIÁO TRÌNH / BÀI GIẢNG
+
+> Các thẻ FC-119–FC-127 dựa trên giáo trình 2021 và PPTX mới bổ sung. Đây là flashcard kiến thức, không có `Question ID` và không làm thay đổi tần suất câu đề.
+
+## Khả tri, bất khả tri và hoài nghi — `MLN111-C1-05`
+
+### FC-119
+**Q:** Phân biệt ngắn gọn khả tri luận, bất khả tri luận và hoài nghi luận.
+**A:** Khả tri luận khẳng định con người có thể nhận thức bản chất sự vật; bất khả tri luận phủ nhận khả năng đạt tới thực tại như nó vốn có; hoài nghi luận nâng sự nghi ngờ tri thức thành nguyên tắc.
+
+**Gợi nhớ:** Khả tri = có thể biết; bất khả tri = không thể biết bản chất; hoài nghi = chưa tin tri thức đã đạt được.
+
+## Nhận thức cảm tính và lý tính — `MLN111-C2-22`
+
+### FC-120
+**Q:** Ba hình thức của nhận thức cảm tính và ba hình thức của nhận thức lý tính là gì?
+**A:** Cảm tính: cảm giác, tri giác, biểu tượng. Lý tính: khái niệm, phán đoán, suy lý.
+
+**Gợi nhớ:** Cảm tính đi từ một thuộc tính → hình ảnh trọn vẹn → hình ảnh trong trí nhớ; lý tính đi từ khái niệm → phán đoán → kết luận mới.
+
+## Thực tiễn và nhận thức — `MLN111-C2-23`
+
+### FC-121
+**Q:** Thực tiễn giữ những vai trò nào đối với nhận thức?
+**A:** Là cơ sở, động lực, mục đích của nhận thức và là tiêu chuẩn kiểm tra chân lý.
+
+**Gợi nhớ:** Bắt đầu từ thực tiễn, được thực tiễn thúc đẩy, phục vụ thực tiễn và quay lại thực tiễn để kiểm tra.
+
+## Chân lý — `MLN111-C2-24`
+
+### FC-122
+**Q:** Chân lý là gì và có những tính chất cơ bản nào?
+**A:** Chân lý là tri thức phù hợp hiện thực khách quan và được thực tiễn kiểm nghiệm; có tính khách quan, tính tương đối–tuyệt đối và tính cụ thể.
+
+**Gợi nhớ:** Đúng với hiện thực, được kiểm nghiệm và luôn đúng trong điều kiện cụ thể.
+
+## Quy luật LLSX–QHSX — `MLN111-C3-05`
+
+### FC-123
+**Q:** Quan hệ biện chứng giữa lực lượng sản xuất và quan hệ sản xuất là gì?
+**A:** Lực lượng sản xuất quyết định quan hệ sản xuất; quan hệ sản xuất tác động trở lại, phù hợp thì thúc đẩy và không phù hợp thì kìm hãm lực lượng sản xuất.
+
+**Gợi nhớ:** Nội dung quyết định hình thức; hình thức tác động trở lại nội dung.
+
+## Quan hệ CSHT–KTTT — `MLN111-C3-08`
+
+### FC-124
+**Q:** Quan hệ biện chứng giữa cơ sở hạ tầng và kiến trúc thượng tầng là gì?
+**A:** Cơ sở hạ tầng quyết định kiến trúc thượng tầng; kiến trúc thượng tầng có tính độc lập tương đối và tác động trở lại cơ sở hạ tầng.
+
+**Gợi nhớ:** Kinh tế quyết định xét đến cùng; chính trị–pháp luật không thụ động mà có thể thúc đẩy hoặc kìm hãm kinh tế.
+
+## Quan hệ tồn tại xã hội–ý thức xã hội — `MLN111-C3-19`
+
+### FC-125
+**Q:** Vì sao nói ý thức xã hội có tính độc lập tương đối?
+**A:** Vì ý thức xã hội có thể lạc hậu hoặc vượt trước tồn tại xã hội, có tính kế thừa, các hình thái tác động qua lại và nó có thể tác động trở lại tồn tại xã hội.
+
+**Gợi nhớ:** Tồn tại xã hội quyết định, nhưng ý thức xã hội không phản ánh thụ động như tấm gương.
+
+## Các hình thái ý thức xã hội — `MLN111-C3-20`
+
+### FC-126
+**Q:** Những hình thái chủ yếu của ý thức xã hội gồm những gì?
+**A:** Ý thức chính trị, pháp quyền, đạo đức, thẩm mỹ/nghệ thuật, tôn giáo, khoa học và triết học.
+
+**Gợi nhớ:** Một đời sống xã hội được nhìn qua nhiều “lăng kính” tinh thần khác nhau.
+
+## Giai cấp và xã hội Việt Nam thời kỳ quá độ — `MLN111-C3-26`
+
+### FC-127
+**Q:** Nội dung trọng tâm của đấu tranh giai cấp ở Việt Nam trong thời kỳ quá độ gắn với nhiệm vụ nào?
+**A:** Gắn với công nghiệp hóa, hiện đại hóa theo định hướng xã hội chủ nghĩa, phát triển đất nước, thực hiện công bằng xã hội và bảo vệ thành quả cách mạng.
+
+**Gợi nhớ:** Trọng tâm là xây dựng và bảo vệ xã hội mới trong điều kiện mới, không chỉ hiểu là xung đột trực tiếp giữa các giai cấp.
 

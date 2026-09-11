@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildLessonSteps, highlightKeywords, allCheckpointsPassed } from "./lesson";
+import { buildLessonSteps, highlightKeywords, allCheckpointsPassed, selectLessonKnowledge } from "./lesson";
 import type { Knowledge, Question } from "../types";
 
 const knowledge: Knowledge[] = [{
@@ -26,6 +26,18 @@ describe("interactive lesson builder", () => {
     expect(allCheckpointsPassed(steps, {})).toBe(false);
     expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": false })).toBe(false);
     expect(allCheckpointsPassed(steps, { "PRM393-ANIM-CURVES:checkpoint": true })).toBe(true);
+  });
+
+  test("includes textbook-only knowledge in a four-concept lesson", () => {
+    const entries = [1, 2, 3, 4, 5].map(index => ({
+      ...knowledge[0],
+      id: `MLN111-C2-${String(index).padStart(2, "0")}`,
+      title: `Concept ${index}`,
+    }));
+    const questionConceptIds = new Set(entries.slice(0, 4).map(entry => entry.id));
+    const selected = selectLessonKnowledge(entries, questionConceptIds, 4);
+    expect(selected).toHaveLength(4);
+    expect(selected.some(entry => entry.id === "MLN111-C2-05")).toBe(true);
   });
 
   test("highlights meaningful terms without matching tiny words", () => {

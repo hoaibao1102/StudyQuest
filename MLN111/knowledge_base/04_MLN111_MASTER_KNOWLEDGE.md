@@ -1,7 +1,7 @@
 # MLN111 — MASTER KNOWLEDGE
 
-**Phiên bản:** v0.1  
-**Nguyên tắc:** nội dung cốt lõi bên dưới được rút từ file tổng hợp và phần giải thích của các đề đã cung cấp; chưa dùng nguồn web bên ngoài.
+**Phiên bản:** v0.2
+**Nguyên tắc:** nội dung cốt lõi được rút từ corpus đề, file tổng hợp và nguồn giáo trình/bài giảng chính thống đã ghi provenance; không dùng nguồn web để âm thầm sửa đáp án.
 
 > File này là **knowledge layer** cho frontend. Nó không thay thế Question Bank; mỗi concept liên kết ngược tới các câu đề thật.
 
@@ -1177,3 +1177,225 @@
 
 ### Các dạng câu đã xuất hiện
 - `MLN111-Q-C17F26B4` (freq 1): Hệ thống các quan điểm duy vật biện chứng về xã hội, làm rõ nguồn gốc, động lực và những quy luật chung của sự vận động, phát triển của xã hội loài người là gì?
+
+---
+
+# BỔ SUNG TỪ GIÁO TRÌNH VÀ BÀI GIẢNG CHÍNH THỐNG
+
+> Các entry dưới đây lấp những concept đã có trong taxonomy nhưng chưa có câu hỏi trong corpus đề. `Unique questions = 0`; nội dung dùng cho Learn Mode và không tự sinh đáp án Exam Mode.
+
+## Khả tri, bất khả tri và hoài nghi
+
+**ID:** `MLN111-C1-05`
+**Mô tả:** Khả năng nhận thức thế giới và ba lập trường nhận thức luận
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Khả tri luận khẳng định con người về nguyên tắc có thể nhận thức được bản chất của sự vật; tri thức có thể phù hợp với chính sự vật.
+- Bất khả tri luận cho rằng con người không thể đạt tới bản chất hay thực tại như nó vốn có; những gì giác quan cung cấp không đủ để đồng nhất hoàn toàn với đối tượng.
+- Hoài nghi luận nâng sự nghi ngờ thành nguyên tắc khi đánh giá tri thức đã đạt được và cho rằng con người không thể đạt tới chân lý khách quan.
+- Cần phân biệt hoài nghi khoa học như một thao tác kiểm tra tri thức với việc tuyệt đối hóa hoài nghi để phủ nhận khả năng nhận thức.
+
+### Ví dụ dễ nhớ
+- Thấy một chiếc hộp kín: khả tri luận tin có thể dùng quan sát và thử nghiệm để biết bên trong; bất khả tri luận nghi ngờ ta có thể biết “vật tự nó”; hoài nghi luận chưa chấp nhận kết luận nếu bằng chứng chưa đủ.
+
+### Bẫy / điểm dễ nhầm
+- Không đồng nhất bất khả tri với việc phủ nhận mọi cảm giác hay mọi hiện tượng; trọng tâm là phủ nhận khả năng đạt tới bản chất tuyệt đối của đối tượng.
+
+### Nguồn bổ sung
+- Giáo trình Triết học Mác–Lênin, hệ không chuyên, NXB Chính trị quốc gia Sự thật, 2021, phần “Thuyết có thể biết và thuyết không thể biết”.
+- `MLN111_TRIẾT HỌC MÁC-LÊNIN.pptx`, slide 12, 14 và 19.
+
+## Nhận thức cảm tính và lý tính
+
+**ID:** `MLN111-C2-22`
+**Mô tả:** Cảm giác–tri giác–biểu tượng và khái niệm–phán đoán–suy lý
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Nhận thức cảm tính phản ánh trực tiếp đối tượng qua giác quan, gồm cảm giác, tri giác và biểu tượng.
+- Cảm giác phản ánh một thuộc tính riêng lẻ; tri giác tổng hợp nhiều cảm giác thành hình ảnh tương đối trọn vẹn; biểu tượng tái hiện hình ảnh trong óc khi sự vật không còn tác động trực tiếp.
+- Nhận thức lý tính phản ánh gián tiếp, khái quát và sâu hơn, gồm khái niệm, phán đoán và suy lý.
+- Cảm tính là cơ sở của lý tính; lý tính định hướng để nhận thức cảm tính nhanh và đầy đủ hơn. Cả hai phải gắn với thực tiễn.
+
+### Ví dụ dễ nhớ
+- Chạm vào cốc thấy nóng là cảm giác; nhận ra cả chiếc cốc nóng là tri giác; nhớ lại hình ảnh chiếc cốc là biểu tượng; rút ra khái niệm “vật dẫn nhiệt” thuộc nhận thức lý tính.
+
+### Bẫy / điểm dễ nhầm
+- Biểu tượng vẫn thuộc nhận thức cảm tính, dù sự vật không còn tác động trực tiếp; nó là khâu trung gian đi lên nhận thức lý tính.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Các giai đoạn của quá trình nhận thức”.
+- PPTX slide 210–216.
+
+## Thực tiễn và nhận thức
+
+**ID:** `MLN111-C2-23`
+**Mô tả:** Khái niệm, hình thức và vai trò của thực tiễn đối với nhận thức
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Thực tiễn là hoạt động vật chất có mục đích, mang tính lịch sử–xã hội của con người nhằm cải biến tự nhiên và xã hội.
+- Ba hình thức cơ bản là sản xuất vật chất, hoạt động chính trị–xã hội và thực nghiệm khoa học; sản xuất vật chất giữ vai trò cơ bản nhất.
+- Thực tiễn là cơ sở, động lực, mục đích của nhận thức và là tiêu chuẩn kiểm tra chân lý.
+- Nhận thức khoa học có thể chỉ đạo thực tiễn tích cực; nhận thức sai có thể gây tác động tiêu cực. Vì vậy phải học đi đôi với hành và tổng kết thực tiễn thành lý luận.
+
+### Ví dụ dễ nhớ
+- Muốn biết hai vật nặng khác nhau có rơi cùng tốc độ hay không, tranh luận chưa đủ; phải làm thí nghiệm. Kết quả thực nghiệm kiểm tra nhận định.
+
+### Bẫy / điểm dễ nhầm
+- Thực tiễn không phải mọi hoạt động nói chung; nó là hoạt động vật chất, có mục đích và mang tính lịch sử–xã hội.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Thực tiễn và vai trò của thực tiễn đối với nhận thức”.
+- PPTX slide 202–209.
+
+## Chân lý
+
+**ID:** `MLN111-C2-24`
+**Mô tả:** Khái niệm, tính khách quan, tương đối–tuyệt đối và tính cụ thể
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Chân lý là tri thức phù hợp với hiện thực khách quan và được thực tiễn kiểm nghiệm.
+- Nội dung chân lý mang tính khách quan, dù hình thức biểu đạt tri thức do chủ thể thực hiện.
+- Chân lý tương đối và chân lý tuyệt đối thống nhất biện chứng: tri thức cụ thể có thể chưa đầy đủ nhưng chứa những hạt nhân đúng đắn được bổ sung dần.
+- Chân lý luôn cụ thể, gắn với đối tượng, điều kiện, không gian và thời gian xác định; không có chân lý trừu tượng, chung chung.
+
+### Ví dụ dễ nhớ
+- “Nước sôi ở 100°C” chỉ đúng trong điều kiện áp suất khí quyển tiêu chuẩn; đổi áp suất thì nhiệt độ sôi thay đổi. Đây là tính cụ thể của chân lý.
+
+### Bẫy / điểm dễ nhầm
+- “Chân lý có tính tương đối” không có nghĩa mọi ý kiến đều đúng; chân lý vẫn phải phản ánh khách quan và được thực tiễn kiểm nghiệm.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Quan điểm của chủ nghĩa duy vật biện chứng về chân lý”.
+- PPTX slide 217–218.
+
+## Quy luật lực lượng sản xuất – quan hệ sản xuất
+
+**ID:** `MLN111-C3-05`
+**Mô tả:** Lực lượng sản xuất quyết định quan hệ sản xuất; quan hệ sản xuất tác động trở lại
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Lực lượng sản xuất và quan hệ sản xuất là hai mặt thống nhất của phương thức sản xuất; lực lượng sản xuất là nội dung vật chất, quan hệ sản xuất là hình thức xã hội.
+- Lực lượng sản xuất có tính năng động, cách mạng và thường xuyên phát triển nên quyết định sự ra đời, nội dung và tính chất của quan hệ sản xuất.
+- Quan hệ sản xuất có tính độc lập tương đối và tác động trở lại: phù hợp thì thúc đẩy, không phù hợp thì kìm hãm lực lượng sản xuất.
+- Mâu thuẫn vận động theo chu trình: phù hợp → không phù hợp → thiết lập sự phù hợp mới ở trình độ cao hơn.
+
+### Ví dụ dễ nhớ
+- Công nghệ sản xuất đã hiện đại nhưng cách tổ chức vẫn cũ và cứng nhắc thì năng suất bị kìm hãm; đổi cách quản lý phù hợp sẽ giúp công nghệ phát huy hiệu quả.
+
+### Bẫy / điểm dễ nhầm
+- Không nói quan hệ sản xuất luôn thụ động; nó tác động trở lại rất lớn, nhưng xét đến cùng lực lượng sản xuất giữ vai trò quyết định.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Biện chứng giữa lực lượng sản xuất và quan hệ sản xuất”.
+- PPTX slide 232–237.
+
+## Quan hệ cơ sở hạ tầng – kiến trúc thượng tầng
+
+**ID:** `MLN111-C3-08`
+**Mô tả:** Cơ sở hạ tầng quyết định kiến trúc thượng tầng; kiến trúc thượng tầng tác động trở lại
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Cơ sở hạ tầng là toàn bộ quan hệ sản xuất hợp thành cơ cấu kinh tế; kiến trúc thượng tầng gồm các quan điểm tư tưởng và thiết chế tương ứng hình thành trên cơ sở đó.
+- Cơ sở hạ tầng quyết định sự ra đời, cơ cấu, tính chất và sự vận động của kiến trúc thượng tầng.
+- Kiến trúc thượng tầng tác động trở lại nhờ tính độc lập tương đối của ý thức và sức mạnh vật chất của các thiết chế.
+- Tác động phù hợp quy luật kinh tế thì thúc đẩy xã hội; tác động ngược chiều thì kìm hãm. Trong kiến trúc thượng tầng, nhà nước có sức mạnh tác động lớn.
+
+### Ví dụ dễ nhớ
+- Khi nền kinh tế thay đổi, pháp luật và bộ máy quản lý cần đổi theo; pháp luật phù hợp sẽ tạo điều kiện cho kinh tế phát triển, pháp luật lạc hậu có thể cản trở nó.
+
+### Bẫy / điểm dễ nhầm
+- “Kinh tế quyết định chính trị” không có nghĩa chính trị hoàn toàn bị động; kiến trúc thượng tầng có thể thúc đẩy hoặc kìm hãm cơ sở kinh tế.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Biện chứng giữa cơ sở hạ tầng và kiến trúc thượng tầng”.
+- PPTX slide 238–244.
+
+## Quan hệ tồn tại xã hội – ý thức xã hội
+
+**ID:** `MLN111-C3-19`
+**Mô tả:** Tồn tại xã hội quyết định; ý thức xã hội có tính độc lập tương đối và tác động trở lại
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Tồn tại xã hội quyết định nguồn gốc, nội dung, tính chất và xu hướng biến đổi của ý thức xã hội; khi tồn tại xã hội thay đổi thì sớm hay muộn ý thức xã hội cũng thay đổi.
+- Ý thức xã hội có tính độc lập tương đối: có thể lạc hậu, vượt trước, có tính kế thừa và các hình thái ý thức tác động qua lại lẫn nhau.
+- Ý thức xã hội tác động trở lại tồn tại xã hội: tư tưởng tiến bộ, phù hợp quy luật thúc đẩy phát triển; tư tưởng lạc hậu có thể kìm hãm.
+- Phương thức sản xuất là yếu tố cơ bản nhất của tồn tại xã hội, nhưng điều kiện tự nhiên và dân số cũng có ảnh hưởng.
+
+### Ví dụ dễ nhớ
+- Công nghệ số làm thay đổi cách sống và làm việc; luật pháp, thói quen và quan niệm xã hội cũng thay đổi theo nhưng thường chậm hơn.
+
+### Bẫy / điểm dễ nhầm
+- Tính độc lập tương đối không phủ nhận vai trò quyết định của tồn tại xã hội; nó giải thích vì sao ý thức không phản ánh máy móc và có thể tác động ngược lại.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Mối quan hệ biện chứng giữa tồn tại xã hội và ý thức xã hội”.
+- PPTX slide 309–322.
+
+## Các hình thái ý thức xã hội
+
+**ID:** `MLN111-C3-20`
+**Mô tả:** Những phương thức khác nhau nắm bắt đời sống xã hội về mặt tinh thần
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Các hình thái chủ yếu gồm ý thức chính trị, pháp quyền, đạo đức, thẩm mỹ/nghệ thuật, tôn giáo, khoa học và triết học.
+- Mỗi hình thái phản ánh một mặt của đời sống xã hội bằng phương thức riêng; sự đa dạng của chúng do sự phong phú của đời sống xã hội quy định.
+- Ý thức chính trị phản ánh quan hệ giai cấp, dân tộc, quốc gia và thái độ đối với quyền lực nhà nước; ý thức pháp quyền phản ánh các quan hệ kinh tế bằng ngôn ngữ pháp luật.
+- Các hình thái không tồn tại biệt lập mà tác động qua lại; ở mỗi thời đại có thể có một hình thái nổi lên và ảnh hưởng mạnh tới các hình thái khác.
+
+### Ví dụ dễ nhớ
+- Cùng một vấn đề bảo vệ môi trường: pháp luật đặt ra quy định, đạo đức nhấn mạnh trách nhiệm, khoa học cung cấp bằng chứng, nghệ thuật tạo cảm xúc và nhận thức cộng đồng.
+
+### Bẫy / điểm dễ nhầm
+- Tâm lý xã hội và hệ tư tưởng là cách phân chia theo trình độ/kết cấu phản ánh; chính trị, pháp quyền, đạo đức… là các hình thái theo lĩnh vực phản ánh.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Các hình thái ý thức xã hội”.
+- PPTX slide 311–321.
+
+## Giai cấp và xã hội Việt Nam thời kỳ quá độ
+
+**ID:** `MLN111-C3-26`
+**Mô tả:** Điều kiện, nội dung và hình thức đấu tranh giai cấp trong thời kỳ quá độ ở Việt Nam
+**Mức ưu tiên theo corpus:** ★
+**Unique questions:** 0
+**Max exact frequency:** 0
+
+### Kiến thức cốt lõi từ tài liệu bổ sung
+- Thời kỳ quá độ ở Việt Nam còn tồn tại cơ sở kinh tế và xã hội làm nảy sinh khác biệt lợi ích, mâu thuẫn giai cấp, cùng các tàn dư tư tưởng và sự chống phá của các thế lực thù địch.
+- Điều kiện mới gồm vai trò lãnh đạo của giai cấp công nhân và Đảng Cộng sản, liên minh công nhân–nông dân–trí thức, Nhà nước pháp quyền xã hội chủ nghĩa và thành quả của công cuộc đổi mới.
+- Nội dung đấu tranh gắn với thực hiện công nghiệp hóa, hiện đại hóa theo định hướng xã hội chủ nghĩa; phát triển đất nước, thực hiện công bằng xã hội và bảo vệ thành quả cách mạng.
+- Hình thức đấu tranh đa dạng, cần kết hợp giáo dục, hành chính, kinh tế, xây dựng và cải tạo, hội nhập quốc tế với quốc phòng–an ninh.
+
+### Ví dụ dễ nhớ
+- Phát triển kinh tế phải đi cùng giảm bất công, bảo vệ người lao động và giữ vững ổn định chính trị–xã hội; không thể chỉ hiểu đấu tranh giai cấp là xung đột bạo lực.
+
+### Bẫy / điểm dễ nhầm
+- Không đồng nhất nội dung đấu tranh giai cấp hiện nay với việc chỉ “lật đổ giai cấp đối lập”; trọng tâm gắn với xây dựng và bảo vệ định hướng xã hội chủ nghĩa trong điều kiện mới.
+
+### Nguồn bổ sung
+- Giáo trình 2021, phần “Đấu tranh giai cấp trong thời kỳ quá độ lên chủ nghĩa xã hội ở Việt Nam”.
+- PPTX slide 270–272.

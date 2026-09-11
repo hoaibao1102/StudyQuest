@@ -471,7 +471,7 @@ function FreeQuizArena({
         <div className="question-title-container">
           <h2 className="question-title">{langMode === "vi" ? translatedPrompt : q.question}</h2>
 
-          {langMode === "bilingual" && (
+          {langMode === "bilingual" && translatedPrompt.trim().toLowerCase() !== q.question.trim().toLowerCase() && (
             <div className="bilingual-translation-box">
               <div className="bilingual-tag">
                 <Languages size={12} /> BẢN DỊCH &amp; GIẢI NGHĨA TIẾNG VIỆT:
@@ -1852,7 +1852,7 @@ function Quiz({
         <div className="question-title-container">
           <h2 className="question-title">{langMode === "vi" ? translatedPrompt : q.question}</h2>
 
-          {langMode === "bilingual" && (
+          {langMode === "bilingual" && translatedPrompt.trim().toLowerCase() !== q.question.trim().toLowerCase() && (
             <div className="bilingual-translation-box">
               <div className="bilingual-tag">
                 <Languages size={12} /> BẢN DỊCH &amp; GIẢI NGHĨA TIẾNG VIỆT:
@@ -1876,21 +1876,50 @@ function Quiz({
                   showWrong ? "wrong" : ""
                 }`}
                 key={o.id}
+                disabled={checked}
               >
-                <b className="option-badge">{o.id}</b>
+                <div className="option-crest">
+                  <span>{o.id}</span>
+                </div>
                 <span className="option-text">{o.text}</span>
+                {showCorrect && <CheckCircle2 size={18} className="option-status-icon ok" />}
+                {showWrong && <ShieldAlert size={18} className="option-status-icon bad" />}
               </button>
             );
           })}
         </div>
 
         {checked && (
-          <div className={`combat-feedback ${isRight ? "feedback-ok" : "feedback-bad"}`}>
+          <div className={`answer-feedback-banner ${isRight ? "victory" : "defeat"}`}>
             <div className="feedback-header">
-              {isRight ? <ShieldCheck size={20} /> : <ShieldAlert size={20} />}
-              <h3>{isRight ? "Chính xác tuyệt đối!" : "Chưa chính xác"}</h3>
+              {isRight ? (
+                <>
+                  <CheckCircle2 size={22} className="feedback-icon ok" />
+                  <div>
+                    <b>CHÍNH XÁC! TẤN CÔNG THÀNH CÔNG!</b>
+                    <p>Đáp án đúng: {q.correctAnswerIds.join(", ")}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ShieldAlert size={22} className="feedback-icon bad" />
+                  <div>
+                    <b>CHƯA CHÍNH XÁC! ĐÃ BỊ DÍNH BẪY!</b>
+                    <p>Đáp án chính xác phải là: {q.correctAnswerIds.join(", ")}</p>
+                  </div>
+                </>
+              )}
             </div>
-            <p>{q.explanation || `Đáp án đúng: ${q.correctAnswerIds.join(", ")}`}</p>
+
+            {q.explanation && (
+              <div className="tactical-debrief">
+                <div className="debrief-label">
+                  <Lightbulb size={14} /> GIẢI MÃ BÍ KÍP &amp; PHÂN TÍCH TÌNH HUỐNG:
+                </div>
+                <p>{q.explanation}</p>
+              </div>
+            )}
+
             {q.trap && (
               <div className="trap-alert-box">
                 <AlertTriangle size={14} />
