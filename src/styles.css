@@ -3282,6 +3282,444 @@ main {
   }
 }
 
+/* =============================================
+   FREE PRACTICE – Progress Dots Bar
+   ============================================= */
+.free-progress-dots-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 16px;
+  background: rgba(13, 20, 38, 0.7);
+  border-bottom: 1px solid #1e2d4a;
+}
+
+.progress-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+.progress-dot.dot-pending {
+  background: #1e2d4a;
+  border: 1px solid #2a3d5e;
+}
+
+.progress-dot.dot-current {
+  background: #8b5cf6;
+  border: 1px solid #a78bfa;
+  box-shadow: 0 0 8px #8b5cf688;
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+.progress-dot.dot-correct {
+  background: #10b981;
+  border: 1px solid #34d399;
+  box-shadow: 0 0 6px #10b98155;
+}
+
+.progress-dot.dot-wrong {
+  background: #ef4444;
+  border: 1px solid #f87171;
+  box-shadow: 0 0 6px #ef444455;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 8px #8b5cf688; }
+  50%        { transform: scale(1.25); box-shadow: 0 0 14px #8b5cf6cc; }
+}
+
+/* =============================================
+   FREE PRACTICE – Real-time Accuracy Bar
+   ============================================= */
+.free-accuracy-bar-row {
+  padding: 8px 16px 4px;
+  background: rgba(13, 20, 38, 0.5);
+  border-bottom: 1px solid #1e2d4a;
+}
+
+.free-accuracy-bar {
+  position: relative;
+  height: 8px;
+  background: #1a273d;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.free-accuracy-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.free-accuracy-wrong-fill {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: linear-gradient(90deg, #ef4444, #f87171);
+  border-radius: 99px;
+  transition: left 0.4s ease, width 0.4s ease;
+}
+
+.free-accuracy-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-family: var(--font-game);
+  letter-spacing: 0.04em;
+}
+
+.acc-correct-label {
+  display: flex; align-items: center; gap: 4px;
+  color: #34d399;
+}
+.acc-pct-label {
+  color: #94a3b8;
+  font-weight: 700;
+}
+.acc-wrong-label {
+  display: flex; align-items: center; gap: 4px;
+  color: #f87171;
+}
+
+/* =============================================
+   FREE STUDY ZONE – Done Progress Banner
+   ============================================= */
+.done-progress-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.07));
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.done-prog-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.done-prog-num {
+  font-family: var(--font-game);
+  font-size: 22px;
+  font-weight: 800;
+  color: #8b5cf6;
+  line-height: 1;
+}
+
+.done-prog-num.acc {
+  color: #10b981;
+}
+
+.done-prog-num.remain {
+  color: #06b6d4;
+}
+
+.done-prog-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.done-prog-track {
+  flex: 1 1 100%;
+  height: 6px;
+  background: #1a273d;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.done-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #06b6d4);
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+.done-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #f87171;
+  cursor: pointer;
+  font-family: var(--font-game);
+  letter-spacing: 0.04em;
+  transition: background 0.2s, border-color 0.2s;
+  margin-left: auto;
+}
+
+.done-reset-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+/* =============================================
+   SETUP – Count Selector Buttons
+   ============================================= */
+.count-selector-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.count-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid #1e2d4a;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-family: var(--font-game);
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.03em;
+}
+
+.count-btn:hover {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: #8b5cf6;
+  color: #a78bfa;
+}
+
+.count-btn.active {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: #8b5cf6;
+  color: #e9d5ff;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+/* =============================================
+   SETUP – No Questions Left State
+   ============================================= */
+.no-questions-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.06));
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  color: #34d399;
+  font-family: var(--font-game);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.no-questions-left svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+/* =============================================
+   CHAPTER DRILL – Tab & Setup
+   ============================================= */
+.chapter-drill-tab.active {
+  border-color: #f59e0b !important;
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+.chapter-drill-badge {
+  background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08)) !important;
+  border-color: rgba(245,158,11,0.35) !important;
+  color: #fbbf24 !important;
+}
+
+.chapter-drill-setup {
+  padding: 20px 0 32px;
+}
+
+.chapter-drill-setup-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(251,191,36,0.04));
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 14px;
+}
+
+.chapter-drill-setup-header h3 {
+  margin: 0 0 4px;
+  font-family: var(--font-game);
+  font-size: 17px;
+  color: #fbbf24;
+  letter-spacing: 0.04em;
+}
+
+.chapter-drill-setup-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Chapter selection grid */
+.chapter-drill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.chapter-drill-card {
+  background: var(--panel-card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
+  user-select: none;
+}
+
+.chapter-drill-card:hover {
+  border-color: rgba(245,158,11,0.45);
+  background: rgba(245,158,11,0.06);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245,158,11,0.12);
+}
+
+.chapter-drill-card.selected {
+  border-color: #f59e0b;
+  background: rgba(245,158,11,0.12);
+  box-shadow: 0 0 20px rgba(245,158,11,0.2);
+}
+
+.cdc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cdc-num {
+  font-family: var(--font-game);
+  font-size: 11px;
+  font-weight: 700;
+  color: #f59e0b;
+  letter-spacing: 0.06em;
+}
+
+.cdc-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #64748b;
+  font-family: var(--font-game);
+}
+
+.cdc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  min-height: 2.8em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cdc-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cdc-prog-track {
+  height: 4px;
+  background: #1a273d;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.cdc-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.cdc-prog-label {
+  font-size: 10px;
+  color: #475569;
+  letter-spacing: 0.03em;
+}
+
+/* Chapter drill footer & hint */
+.chapter-drill-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.chapter-drill-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 13px;
+  margin: 0;
+}
+
+.chapter-drill-hint svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+/* Verdict banner in result screen */
+.chapter-drill-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: var(--font-game);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin: 10px 0 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid #1e2d4a;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .chapter-drill-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 400px) {
+  .chapter-drill-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 
 
 

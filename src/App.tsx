@@ -351,9 +351,11 @@ function Dashboard() {
 function FreeQuizArena({
   questions,
   onFinish,
+  onQuestionDone,
 }: {
   questions: Question[];
-  onFinish: (score: number) => void;
+  onFinish: (score: number, results: { id: string; correct: boolean }[]) => void;
+  onQuestionDone?: (id: string, correct: boolean) => void;
 }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string[]>([]);
@@ -361,6 +363,8 @@ function FreeQuizArena({
   const [correct, setCorrect] = useState(0);
   const [combo, setCombo] = useState(0);
   const [langMode, setLangMode] = useState<"en" | "vi" | "bilingual">("bilingual");
+  // Track per-question results for the progress bar
+  const [results, setResults] = useState<{ id: string; correct: boolean }[]>([]);
 
   const q = questions[idx];
   if (!q) return null;
@@ -387,9 +391,14 @@ function FreeQuizArena({
 
   const next = () => {
     sound.playClick();
-    const n = correct + (isRight ? 1 : 0);
+    const wasRight = gradeAnswer(selected, q.correctAnswerIds);
+    const newResults = [...results, { id: q.id, correct: wasRight }];
+    setResults(newResults);
+    onQuestionDone?.(q.id, wasRight);
+
+    const n = correct + (wasRight ? 1 : 0);
     if (idx === questions.length - 1) {
-      onFinish(Math.round((n / questions.length) * 100));
+      onFinish(Math.round((n / questions.length) * 100), newResults);
     } else {
       setCorrect(n);
       setIdx(idx + 1);
@@ -399,6 +408,11 @@ function FreeQuizArena({
   };
 
   const translatedPrompt = translateQuestionPrompt(q.question);
+
+  // Accuracy so far
+  const doneCount = results.length;
+  const correctCount = results.filter((r) => r.correct).length;
+  const accuracyPct = doneCount > 0 ? Math.round((correctCount / doneCount) * 100) : null;
 
   return (
     <section className="battle-arena">
@@ -418,6 +432,44 @@ function FreeQuizArena({
           <b>{idx + 1}</b> / {questions.length}
         </div>
       </div>
+
+      {/* Progress dots bar */}
+      <div className="free-progress-dots-bar">
+        {questions.map((_, i) => {
+          const r = results[i];
+          let cls = "dot-pending";
+          if (r) cls = r.correct ? "dot-correct" : "dot-wrong";
+          else if (i === idx) cls = "dot-current";
+          return <span key={i} className={`progress-dot ${cls}`} title={`Câu ${i + 1}`} />;
+        })}
+      </div>
+
+      {doneCount > 0 && (
+        <div className="free-accuracy-bar-row">
+          <div className="free-accuracy-bar">
+            <div
+              className="free-accuracy-fill"
+              style={{ width: `${(correctCount / questions.length) * 100}%` }}
+            />
+            <div
+              className="free-accuracy-wrong-fill"
+              style={{
+                left: `${(correctCount / questions.length) * 100}%`,
+                width: `${((doneCount - correctCount) / questions.length) * 100}%`,
+              }}
+            />
+          </div>
+          <div className="free-accuracy-labels">
+            <span className="acc-correct-label">
+              <CheckCircle2 size={13} /> {correctCount} đúng
+            </span>
+            <span className="acc-pct-label">{accuracyPct}% chính xác</span>
+            <span className="acc-wrong-label">
+              <X size={13} /> {doneCount - correctCount} sai
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="hp-bar-frame">
         <div className="hp-fill" style={{ width: `${(idx / questions.length) * 100}%` }} />
@@ -573,21 +625,57 @@ function FreeQuizArena({
   );
 }
 
+// LocalStorage key for tracking done questions per subject
+function getDoneKey(subjectId: string) {
+  return `sq_free_done_${subjectId}`;
+}
+function loadDoneIds(subjectId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(getDoneKey(subjectId));
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch {}
+  return new Set();
+}
+function saveDoneIds(subjectId: string, ids: Set<string>) {
+  localStorage.setItem(getDoneKey(subjectId), JSON.stringify([...ids]));
+}
+function loadDoneStats(subjectId: string): { correct: number; total: number } {
+  try {
+    const raw = localStorage.getItem(`sq_free_stats_${subjectId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { correct: 0, total: 0 };
+}
+function saveDoneStats(subjectId: string, stats: { correct: number; total: number }) {
+  localStorage.setItem(`sq_free_stats_${subjectId}`, JSON.stringify(stats));
+}
+
 function FreeStudyZone({ data }: { data: SubjectData }) {
-  const [activeSubTab, setActiveSubTab] = useState<"codex" | "practice">("codex");
+  const [activeSubTab, setActiveSubTab] = useState<"codex" | "practice" | "chapter-drill">("codex");
   const [selectedChapter, setSelectedChapter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [practiceConfig, setPracticeConfig] = useState<{
     chapterId: string;
-    count: number;
+    count: number | null;
     difficulty: string;
   }>({
     chapterId: "all",
-    count: 10,
+    count: 30,
     difficulty: "all",
   });
   const [isPracticing, setIsPracticing] = useState(false);
   const [practiceScore, setPracticeScore] = useState<number | null>(null);
+
+  // Chapter-drill mode (ôn toàn chương)
+  const [isChapterDrilling, setIsChapterDrilling] = useState(false);
+  const [chapterDrillId, setChapterDrillId] = useState<string | null>(null);
+  const [chapterDrillScore, setChapterDrillScore] = useState<number | null>(null);
+
+  // Track done question IDs and cumulative stats
+  const [doneIds, setDoneIds] = useState<Set<string>>(() => loadDoneIds(data.id));
+  const [doneStats, setDoneStats] = useState<{ correct: number; total: number }>(
+    () => loadDoneStats(data.id)
+  );
 
   const filteredConcepts = useMemo(() => {
     let list = data.knowledge;
@@ -606,16 +694,135 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
     return list;
   }, [data.knowledge, selectedChapter, searchQuery]);
 
+  // Clean questions pool (exclude broken or unverified questions)
+  const cleanQuestions = useMemo(
+    () => data.questions.filter((q) => q.qualityStatus === "clean"),
+    [data.questions]
+  );
+
+  // Pool: exclude already done questions
   const practiceQuestions = useMemo(() => {
-    let pool = data.questions;
+    let pool = cleanQuestions.filter((q) => !doneIds.has(q.id));
     if (practiceConfig.chapterId !== "all") {
       pool = pool.filter((q) => q.chapterId === practiceConfig.chapterId);
     }
     if (practiceConfig.difficulty !== "all") {
       pool = pool.filter((q) => q.difficulty === Number(practiceConfig.difficulty));
     }
-    return shuffle(pool).slice(0, practiceConfig.count);
-  }, [data.questions, practiceConfig]);
+    const shuffled = shuffle(pool);
+    // null = lấy toàn bộ câu trong pool
+    return practiceConfig.count === null ? shuffled : shuffled.slice(0, practiceConfig.count);
+  }, [cleanQuestions, practiceConfig, doneIds]);
+
+  // Called after each answered question to persist history
+  const handleQuestionDone = (id: string, correct: boolean) => {
+    const newDone = new Set(doneIds).add(id);
+    const newStats = { correct: doneStats.correct + (correct ? 1 : 0), total: doneStats.total + 1 };
+    setDoneIds(newDone);
+    setDoneStats(newStats);
+    saveDoneIds(data.id, newDone);
+    saveDoneStats(data.id, newStats);
+  };
+
+  const resetHistory = () => {
+    sound.playClick();
+    const empty = new Set<string>();
+    const emptyStats = { correct: 0, total: 0 };
+    setDoneIds(empty);
+    setDoneStats(emptyStats);
+    saveDoneIds(data.id, empty);
+    saveDoneStats(data.id, emptyStats);
+  };
+
+  // Scoped stats based on selected chapter
+  const scopedQuestions = useMemo(() => {
+    if (practiceConfig.chapterId === "all") return cleanQuestions;
+    return cleanQuestions.filter((q) => q.chapterId === practiceConfig.chapterId);
+  }, [cleanQuestions, practiceConfig.chapterId]);
+
+  const totalQ = scopedQuestions.length;
+  const doneCount = scopedQuestions.filter((q) => doneIds.has(q.id)).length;
+  const doneAccuracy = doneStats.total > 0 ? Math.round((doneStats.correct / doneStats.total) * 100) : null;
+  const remainingCount = totalQ - doneCount;
+
+  // Chapter drill questions (ALL clean questions in the chapter, shuffled, no done-filter)
+  const chapterDrillQuestions = useMemo(() => {
+    if (!chapterDrillId) return [];
+    return shuffle(cleanQuestions.filter((q) => q.chapterId === chapterDrillId));
+  }, [cleanQuestions, chapterDrillId]);
+
+  if (isChapterDrilling) {
+    const drillChapter = data.chapters.find((ch) => ch.id === chapterDrillId);
+    return (
+      <div className="free-practice-session">
+        <div className="free-practice-header">
+          <button
+            className="btn ghost back-to-free-btn"
+            onClick={() => {
+              sound.playClick();
+              setIsChapterDrilling(false);
+              setChapterDrillScore(null);
+            }}
+          >
+            <ChevronLeft size={16} /> Thoát Ôn Chương
+          </button>
+          <span className="free-practice-badge chapter-drill-badge">
+            <BookOpen size={14} /> ÔN TOÀN CHƯƠNG: {drillChapter?.title ?? chapterDrillId}
+          </span>
+        </div>
+
+        {chapterDrillScore !== null ? (
+          <div className="free-practice-result-card">
+            <Trophy size={48} className="result-trophy-icon" />
+            <h2>Hoàn thành Ôn Toàn Chương!</h2>
+            <div className="free-result-score">
+              <span>Độ chính xác:</span>
+              <b>{chapterDrillScore}%</b>
+            </div>
+            <p>
+              Bạn đã ôn xong <b>{chapterDrillQuestions.length} câu</b> của chương{" "}
+              <b>{drillChapter?.title ?? chapterDrillId}</b>.
+            </p>
+            <div className="chapter-drill-verdict">
+              {chapterDrillScore >= 80 ? (
+                <><ShieldCheck size={18} /> Xuất sắc! Bạn đã nắm vững chương này.</>
+              ) : chapterDrillScore >= 60 ? (
+                <><Lightbulb size={18} /> Khá tốt! Ôn lại những câu sai để củng cố thêm.</>  
+              ) : (
+                <><ShieldAlert size={18} /> Cần ôn thêm! Đọc lại bí kíp trước khi thử lại.</>
+              )}
+            </div>
+            <div className="result-actions" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  sound.playClick();
+                  setChapterDrillScore(null);
+                }}
+              >
+                <RotateCcw size={16} /> Ôn lại chương này
+              </button>
+              <button
+                className="btn ghost"
+                onClick={() => {
+                  sound.playClick();
+                  setIsChapterDrilling(false);
+                  setChapterDrillScore(null);
+                }}
+              >
+                Chọn chương khác
+              </button>
+            </div>
+          </div>
+        ) : (
+          <FreeQuizArena
+            questions={chapterDrillQuestions}
+            onFinish={(score) => setChapterDrillScore(score)}
+          />
+        )}
+      </div>
+    );
+  }
 
   if (isPracticing) {
     return (
@@ -647,7 +854,23 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
             <p>
               Bạn đã hoàn thành lượt luyện tập tự do {practiceQuestions.length} câu.
             </p>
-            <div className="result-actions" style={{ display: "flex", gap: "10px" }}>
+            {/* Overall progress banner */}
+            <div className="done-progress-banner">
+              <div className="done-prog-stat">
+                <span className="done-prog-num">{doneCount}</span>
+                <span className="done-prog-label">/ {totalQ} câu đã làm</span>
+              </div>
+              {doneAccuracy !== null && (
+                <div className="done-prog-stat">
+                  <span className="done-prog-num acc">{doneAccuracy}%</span>
+                  <span className="done-prog-label">tỉ lệ đúng tổng thể</span>
+                </div>
+              )}
+              <div className="done-prog-track">
+                <div className="done-prog-fill" style={{ width: `${(doneCount / totalQ) * 100}%` }} />
+              </div>
+            </div>
+            <div className="result-actions" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <button
                 className="btn primary"
                 onClick={() => {
@@ -673,6 +896,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
           <FreeQuizArena
             questions={practiceQuestions}
             onFinish={(score) => setPracticeScore(score)}
+            onQuestionDone={handleQuestionDone}
           />
         )}
       </div>
@@ -699,6 +923,15 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
           }}
         >
           <Swords size={16} /> Đấu Trường Tự Do ({data.stats.clean} Câu hỏi)
+        </button>
+        <button
+          className={`free-subnav-btn chapter-drill-tab ${activeSubTab === "chapter-drill" ? "active" : ""}`}
+          onClick={() => {
+            sound.playClick();
+            setActiveSubTab("chapter-drill");
+          }}
+        >
+          <ScrollText size={16} /> Ôn Toàn Chương ({data.chapters.length} Chương)
         </button>
       </div>
 
@@ -802,7 +1035,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
             )}
           </div>
         </div>
-      ) : (
+      ) : activeSubTab === "practice" ? (
         <div className="free-practice-setup-card">
           <div className="practice-setup-header">
             <div className="setup-icon-circle">
@@ -812,6 +1045,35 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
               <h3>Tùy Chọn Đấu Trường Tự Do</h3>
               <p>Luyện tập không giới hạn theo chương hoặc tổng hợp toàn bộ môn học</p>
             </div>
+          </div>
+
+          {/* Overall progress stats banner */}
+          <div className="done-progress-banner">
+            <div className="done-prog-stat">
+              <span className="done-prog-num">{doneCount}</span>
+              <span className="done-prog-label">/ {totalQ} câu đã làm</span>
+            </div>
+            {doneAccuracy !== null && (
+              <div className="done-prog-stat">
+                <span className="done-prog-num acc">{doneAccuracy}%</span>
+                <span className="done-prog-label">tỉ lệ đúng ({doneStats.correct}/{doneStats.total})</span>
+              </div>
+            )}
+            <div className="done-prog-stat">
+              <span className="done-prog-num remain">{remainingCount}</span>
+              <span className="done-prog-label">câu chưa làm</span>
+            </div>
+            <div className="done-prog-track">
+              <div
+                className="done-prog-fill"
+                style={{ width: totalQ > 0 ? `${(doneCount / totalQ) * 100}%` : "0%" }}
+              />
+            </div>
+            {doneCount > 0 && (
+              <button className="done-reset-btn" onClick={resetHistory} title="Xóa lịch sử để làm lại từ đầu">
+                <RotateCcw size={13} /> Đặt lại lịch sử
+              </button>
+            )}
           </div>
 
           <div className="setup-fields-grid">
@@ -835,13 +1097,13 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
             <div className="setup-field">
               <label>Số lượng câu hỏi:</label>
               <div className="count-selector-btns">
-                {[5, 10, 20, 30].map((num) => (
+                {([30, 60, null] as (number | null)[]).map((num) => (
                   <button
-                    key={num}
+                    key={num ?? "all"}
                     className={`count-btn ${practiceConfig.count === num ? "active" : ""}`}
                     onClick={() => setPracticeConfig((c) => ({ ...c, count: num }))}
                   >
-                    {num} câu
+                    {num === null ? "Toàn bộ chương" : `${num} câu`}
                   </button>
                 ))}
               </div>
@@ -864,19 +1126,92 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
           </div>
 
           <div className="setup-footer">
-            <button
-              className="btn primary start-free-btn"
-              onClick={() => {
-                sound.playClick();
-                setIsPracticing(true);
-                setPracticeScore(null);
-              }}
-            >
-              <Swords size={18} /> Bắt đầu Luyện tập Tự do ({practiceQuestions.length} câu)
-            </button>
+            {practiceQuestions.length === 0 ? (
+              <div className="no-questions-left">
+                <Trophy size={22} />
+                <span>Bạn đã làm hết tất cả câu hỏi trong bộ lọc này!</span>
+                <button className="btn ghost" onClick={resetHistory}>
+                  <RotateCcw size={15} /> Làm lại từ đầu
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn primary start-free-btn"
+                onClick={() => {
+                  sound.playClick();
+                  setIsPracticing(true);
+                  setPracticeScore(null);
+                }}
+              >
+                <Swords size={18} /> Bắt đầu Luyện tập Tự do ({practiceQuestions.length} câu mới)
+              </button>
+            )}
           </div>
         </div>
-      )}
+      ) : activeSubTab === "chapter-drill" ? (
+        <div className="chapter-drill-setup">
+          <div className="chapter-drill-setup-header">
+            <div className="setup-icon-circle">
+              <ScrollText size={26} />
+            </div>
+            <div>
+              <h3>Ôn Toàn Chương</h3>
+              <p>Chọn một chương và làm <b>toàn bộ câu hỏi</b> của chương đó trong một lượt duy nhất</p>
+            </div>
+          </div>
+
+          <div className="chapter-drill-grid">
+            {data.chapters.map((ch, i) => {
+              const chQ = cleanQuestions.filter((q) => q.chapterId === ch.id);
+              const chDone = chQ.filter((q) => doneIds.has(q.id)).length;
+              const chPct = chQ.length > 0 ? Math.round((chDone / chQ.length) * 100) : 0;
+              return (
+                <div
+                  key={ch.id}
+                  className={`chapter-drill-card ${chapterDrillId === ch.id ? "selected" : ""}`}
+                  onClick={() => {
+                    sound.playClick();
+                    setChapterDrillId(ch.id);
+                  }}
+                >
+                  <div className="cdc-top">
+                    <span className="cdc-num">CH {String(i + 1).padStart(2, "0")}</span>
+                    <span className="cdc-count">
+                      <HelpCircle size={13} /> {chQ.length} câu
+                    </span>
+                  </div>
+                  <div className="cdc-title">{ch.title}</div>
+                  <div className="cdc-progress">
+                    <div className="cdc-prog-track">
+                      <div className="cdc-prog-fill" style={{ width: `${chPct}%` }} />
+                    </div>
+                    <span className="cdc-prog-label">{chDone}/{chQ.length} đã làm trong chế độ tự do</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="chapter-drill-footer">
+            {chapterDrillId ? (
+              <button
+                className="btn primary start-free-btn"
+                onClick={() => {
+                  sound.playClick();
+                  setChapterDrillScore(null);
+                  setIsChapterDrilling(true);
+                }}
+              >
+                <ScrollText size={18} /> Bắt đầu Ôn Toàn Chương ({chapterDrillQuestions.length} câu)
+              </button>
+            ) : (
+              <p className="chapter-drill-hint">
+                <Lightbulb size={15} /> Chọn một chương ở trên để bắt đầu ôn
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
