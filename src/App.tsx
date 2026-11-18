@@ -21,6 +21,7 @@ import {
   Languages,
   Layers,
   Lightbulb,
+  ListOrdered,
   LockKeyhole,
   Map,
   RotateCcw,
@@ -42,7 +43,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Question, SubjectData, SubjectManifest } from "./types";
-import { createQuiz, gradeAnswer, shuffle } from "./lib/quiz";
+import { createQuiz, gradeAnswer, nextUnansweredIndex, pickQuestions, shuffle } from "./lib/quiz";
 import {
   calculateLevelInfo,
   calculateStars,
@@ -352,33 +353,51 @@ function FreeQuizArena({
   questions,
   onFinish,
   onQuestionDone,
+  doneIds,
 }: {
   questions: Question[];
   onFinish: (score: number, results: { id: string; correct: boolean }[]) => void;
   onQuestionDone?: (id: string, correct: boolean) => void;
+  /** Câu đã làm ở các lượt trước (để đánh dấu trên thanh chấm) */
+  doneIds?: Set<string>;
 }) {
   const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [checked, setChecked] = useState(false);
-  const [correct, setCorrect] = useState(0);
+  // Lưu đáp án theo id câu hỏi → nhảy qua lại không mất bài làm
+  const [answers, setAnswers] = useState<Record<string, { selected: string[]; checked: boolean }>>({});
   const [combo, setCombo] = useState(0);
   const [langMode, setLangMode] = useState<"en" | "vi" | "bilingual">("bilingual");
-  // Track per-question results for the progress bar
-  const [results, setResults] = useState<{ id: string; correct: boolean }[]>([]);
 
   const q = questions[idx];
   if (!q) return null;
 
+  const cur = answers[q.id] ?? { selected: [], checked: false };
+  const { selected, checked } = cur;
   const isRight = gradeAnswer(selected, q.correctAnswerIds);
+
+  const results = questions
+    .filter((x) => answers[x.id]?.checked)
+    .map((x) => ({ id: x.id, correct: gradeAnswer(answers[x.id].selected, x.correctAnswerIds) }));
+  const doneCount = results.length;
+  const correctCount = results.filter((r) => r.correct).length;
+  const accuracyPct = doneCount > 0 ? Math.round((correctCount / doneCount) * 100) : null;
+  const answeredIds = new Set(results.map((r) => r.id));
 
   const toggle = (x: string) => {
     if (checked) return;
     sound.playClick();
-    setSelected((s) => (q.type === "single" ? [x] : s.includes(x) ? s.filter((y) => y !== x) : [...s, x]));
+    const nextSelected =
+      q.type === "single" ? [x] : selected.includes(x) ? selected.filter((y) => y !== x) : [...selected, x];
+    setAnswers((a) => ({ ...a, [q.id]: { selected: nextSelected, checked: false } }));
+  };
+
+  const jumpTo = (i: number) => {
+    if (i === idx) return;
+    sound.playClick();
+    setIdx(i);
   };
 
   const handleConfirm = () => {
-    setChecked(true);
+    setAnswers((a) => ({ ...a, [q.id]: { selected, checked: true } }));
     if (isRight) {
       const nextCombo = combo + 1;
       setCombo(nextCombo);
@@ -387,32 +406,22 @@ function FreeQuizArena({
       setCombo(0);
       sound.playWrong();
     }
+    onQuestionDone?.(q.id, isRight);
   };
 
   const next = () => {
     sound.playClick();
-    const wasRight = gradeAnswer(selected, q.correctAnswerIds);
-    const newResults = [...results, { id: q.id, correct: wasRight }];
-    setResults(newResults);
-    onQuestionDone?.(q.id, wasRight);
-
-    const n = correct + (wasRight ? 1 : 0);
-    if (idx === questions.length - 1) {
-      onFinish(Math.round((n / questions.length) * 100), newResults);
+    // Ưu tiên câu chưa làm kế tiếp (quay vòng); hết câu chưa làm → chốt kết quả
+    const i = nextUnansweredIndex(questions.map((x) => x.id), answeredIds, idx);
+    if (i === -1) {
+      sound.playVictory();
+      onFinish(Math.round((correctCount / questions.length) * 100), results);
     } else {
-      setCorrect(n);
-      setIdx(idx + 1);
-      setSelected([]);
-      setChecked(false);
+      setIdx(i);
     }
   };
 
   const translatedPrompt = translateQuestionPrompt(q.question);
-
-  // Accuracy so far
-  const doneCount = results.length;
-  const correctCount = results.filter((r) => r.correct).length;
-  const accuracyPct = doneCount > 0 ? Math.round((correctCount / doneCount) * 100) : null;
 
   return (
     <section className="battle-arena">
@@ -433,14 +442,28 @@ function FreeQuizArena({
         </div>
       </div>
 
-      {/* Progress dots bar */}
+      {/* Progress dots bar — bấm vào để nhảy tới câu bất kỳ */}
       <div className="free-progress-dots-bar">
-        {questions.map((_, i) => {
-          const r = results[i];
+        {questions.map((question, i) => {
+          const a = answers[question.id];
+          const answeredBefore = doneIds?.has(question.id);
           let cls = "dot-pending";
-          if (r) cls = r.correct ? "dot-correct" : "dot-wrong";
-          else if (i === idx) cls = "dot-current";
-          return <span key={i} className={`progress-dot ${cls}`} title={`Câu ${i + 1}`} />;
+          if (a?.checked) cls = gradeAnswer(a.selected, question.correctAnswerIds) ? "dot-correct" : "dot-wrong";
+          else if (answeredBefore) cls = "dot-history";
+          if (i === idx) cls = `${cls} dot-active`;
+          const note = a?.checked ? " (vừa làm)" : answeredBefore ? " (đã làm trước đó)" : "";
+          return (
+            <button
+              type="button"
+              key={question.id}
+              className={`progress-dot ${cls}`}
+              title={`Câu ${i + 1}${note}`}
+              aria-label={`Tới câu ${i + 1}`}
+              onClick={() => jumpTo(i)}
+            >
+              {i + 1}
+            </button>
+          );
         })}
       </div>
 
@@ -472,7 +495,7 @@ function FreeQuizArena({
       )}
 
       <div className="hp-bar-frame">
-        <div className="hp-fill" style={{ width: `${(idx / questions.length) * 100}%` }} />
+        <div className="hp-fill" style={{ width: `${(doneCount / questions.length) * 100}%` }} />
       </div>
 
       <div className="question-card">
@@ -593,7 +616,26 @@ function FreeQuizArena({
           </div>
         )}
 
-        <div className="action-row">
+        <div className="action-row quiz-nav-row">
+          <div className="quiz-nav-group">
+            <button
+              className="btn ghost"
+              disabled={idx === 0}
+              title="Câu trước"
+              onClick={() => jumpTo(idx - 1)}
+            >
+              <ChevronLeft size={16} /> Câu trước
+            </button>
+            <button
+              className="btn ghost"
+              disabled={idx === questions.length - 1}
+              title="Câu sau"
+              onClick={() => jumpTo(idx + 1)}
+            >
+              Câu sau <ChevronRight size={16} />
+            </button>
+          </div>
+
           {!checked ? (
             <button
               disabled={
@@ -608,7 +650,7 @@ function FreeQuizArena({
             </button>
           ) : (
             <button className="btn primary" onClick={next}>
-              {idx === questions.length - 1 ? (
+              {doneCount === questions.length ? (
                 <>
                   <Trophy size={18} /> Xem kết quả lượt luyện tập
                 </>
@@ -658,13 +700,32 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
     chapterId: string;
     count: number | null;
     difficulty: string;
-  }>({
-    chapterId: "all",
-    count: 30,
-    difficulty: "all",
+    /** Xáo trộn thứ tự câu hỏi (random) hay giữ thứ tự gốc */
+    random: boolean;
+    /** Gộp cả câu đã làm vào lượt luyện (để continue và xem lại) */
+    includeDone: boolean;
+  }>(() => {
+    const base = { chapterId: "all", count: 30, difficulty: "all", random: true, includeDone: false };
+    try {
+      const raw = localStorage.getItem(`sq_free_cfg_${data.id}`);
+      if (raw) return { ...base, ...JSON.parse(raw) };
+    } catch {}
+    return base;
   });
+  const setCfg = (patch: Partial<typeof practiceConfig>) =>
+    setPracticeConfig((c) => {
+      const next = { ...c, ...patch };
+      try {
+        localStorage.setItem(`sq_free_cfg_${data.id}`, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
   const [isPracticing, setIsPracticing] = useState(false);
   const [practiceScore, setPracticeScore] = useState<number | null>(null);
+  // Chốt bộ câu hỏi của lượt khi bắt đầu để danh sách không đổi giữa chừng
+  const [sessionQuestions, setSessionQuestions] = useState<Question[]>([]);
+  // Đổi round để arena reset đáp án khi chơi lượt mới
+  const [round, setRound] = useState(0);
 
   // Chapter-drill mode (ôn toàn chương)
   const [isChapterDrilling, setIsChapterDrilling] = useState(false);
@@ -700,22 +761,24 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
     [data.questions]
   );
 
-  // Pool: exclude already done questions
+  // Pool: ẩn câu đã làm nếu tắt includeDone; xáo trộn theo cấu hình
   const practiceQuestions = useMemo(() => {
-    let pool = cleanQuestions.filter((q) => !doneIds.has(q.id));
+    let pool = practiceConfig.includeDone ? cleanQuestions : cleanQuestions.filter((q) => !doneIds.has(q.id));
     if (practiceConfig.chapterId !== "all") {
       pool = pool.filter((q) => q.chapterId === practiceConfig.chapterId);
     }
     if (practiceConfig.difficulty !== "all") {
       pool = pool.filter((q) => q.difficulty === Number(practiceConfig.difficulty));
     }
-    const shuffled = shuffle(pool);
-    // null = lấy toàn bộ câu trong pool
-    return practiceConfig.count === null ? shuffled : shuffled.slice(0, practiceConfig.count);
+    return pickQuestions(pool, practiceConfig.count, practiceConfig.random);
   }, [cleanQuestions, practiceConfig, doneIds]);
 
   // Called after each answered question to persist history
   const handleQuestionDone = (id: string, correct: boolean) => {
+    if (doneIds.has(id)) {
+      // Đang ôn lại câu đã làm → không cộng trùng vào thống kê
+      return;
+    }
     const newDone = new Set(doneIds).add(id);
     const newStats = { correct: doneStats.correct + (correct ? 1 : 0), total: doneStats.total + 1 };
     setDoneIds(newDone);
@@ -745,11 +808,11 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
   const doneAccuracy = doneStats.total > 0 ? Math.round((doneStats.correct / doneStats.total) * 100) : null;
   const remainingCount = totalQ - doneCount;
 
-  // Chapter drill questions (ALL clean questions in the chapter, shuffled, no done-filter)
+  // Chapter drill questions (ALL clean questions in the chapter, order theo cấu hình random)
   const chapterDrillQuestions = useMemo(() => {
     if (!chapterDrillId) return [];
-    return shuffle(cleanQuestions.filter((q) => q.chapterId === chapterDrillId));
-  }, [cleanQuestions, chapterDrillId]);
+    return pickQuestions(cleanQuestions.filter((q) => q.chapterId === chapterDrillId), null, practiceConfig.random);
+  }, [cleanQuestions, chapterDrillId, practiceConfig.random]);
 
   if (isChapterDrilling) {
     const drillChapter = data.chapters.find((ch) => ch.id === chapterDrillId);
@@ -818,6 +881,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
           <FreeQuizArena
             questions={chapterDrillQuestions}
             onFinish={(score) => setChapterDrillScore(score)}
+            doneIds={doneIds}
           />
         )}
       </div>
@@ -852,7 +916,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
               <b>{practiceScore}%</b>
             </div>
             <p>
-              Bạn đã hoàn thành lượt luyện tập tự do {practiceQuestions.length} câu.
+              Bạn đã hoàn thành lượt luyện tập tự do {sessionQuestions.length} câu.
             </p>
             {/* Overall progress banner */}
             <div className="done-progress-banner">
@@ -875,7 +939,10 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
                 className="btn primary"
                 onClick={() => {
                   sound.playClick();
+                  setSessionQuestions(practiceQuestions);
+                  setRound((r) => r + 1);
                   setPracticeScore(null);
+                  if (practiceQuestions.length === 0) setIsPracticing(false);
                 }}
               >
                 <RotateCcw size={16} /> Luyện tập lượt mới
@@ -894,9 +961,11 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
           </div>
         ) : (
           <FreeQuizArena
-            questions={practiceQuestions}
+            key={round}
+            questions={sessionQuestions}
             onFinish={(score) => setPracticeScore(score)}
             onQuestionDone={handleQuestionDone}
+            doneIds={doneIds}
           />
         )}
       </div>
@@ -1081,9 +1150,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
               <label>Phạm vi chương kiến thức:</label>
               <select
                 value={practiceConfig.chapterId}
-                onChange={(e) =>
-                  setPracticeConfig((c) => ({ ...c, chapterId: e.target.value }))
-                }
+                onChange={(e) => setCfg({ chapterId: e.target.value })}
               >
                 <option value="all">Toàn bộ môn học ({data.stats.clean} câu hỏi)</option>
                 {data.chapters.map((ch, idx) => (
@@ -1101,7 +1168,7 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
                   <button
                     key={num ?? "all"}
                     className={`count-btn ${practiceConfig.count === num ? "active" : ""}`}
-                    onClick={() => setPracticeConfig((c) => ({ ...c, count: num }))}
+                    onClick={() => setCfg({ count: num })}
                   >
                     {num === null ? "Toàn bộ chương" : `${num} câu`}
                   </button>
@@ -1113,15 +1180,49 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
               <label>Độ khó mục tiêu:</label>
               <select
                 value={practiceConfig.difficulty}
-                onChange={(e) =>
-                  setPracticeConfig((c) => ({ ...c, difficulty: e.target.value }))
-                }
+                onChange={(e) => setCfg({ difficulty: e.target.value })}
               >
                 <option value="all">Tất cả mức độ</option>
                 <option value="easy">Dễ (Easy)</option>
                 <option value="medium">Trung bình (Medium)</option>
                 <option value="hard">Nâng cao (Hard)</option>
               </select>
+            </div>
+
+            <div className="setup-field">
+              <label>Thứ tự câu hỏi:</label>
+              <div className="count-selector-btns">
+                <button
+                  className={`count-btn ${practiceConfig.random ? "active" : ""}`}
+                  onClick={() => setCfg({ random: true })}
+                >
+                  Random (ngẫu nhiên)
+                </button>
+                <button
+                  className={`count-btn ${!practiceConfig.random ? "active" : ""}`}
+                  onClick={() => setCfg({ random: false })}
+                >
+                  Giữ thứ tự gốc
+                </button>
+              </div>
+            </div>
+
+            <div className="setup-field">
+              <label>Câu hỏi trong lượt luyện:</label>
+              <div className="count-selector-btns">
+                <button
+                  className={`count-btn ${!practiceConfig.includeDone ? "active" : ""}`}
+                  onClick={() => setCfg({ includeDone: false })}
+                >
+                  Chỉ câu chưa làm ({remainingCount})
+                </button>
+                <button
+                  className={`count-btn ${practiceConfig.includeDone ? "active" : ""}`}
+                  onClick={() => setCfg({ includeDone: true })}
+                >
+                  Gồm cả câu đã làm ({totalQ})
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1139,11 +1240,13 @@ function FreeStudyZone({ data }: { data: SubjectData }) {
                 className="btn primary start-free-btn"
                 onClick={() => {
                   sound.playClick();
+                  setSessionQuestions(practiceQuestions);
+                  setRound((r) => r + 1);
                   setIsPracticing(true);
                   setPracticeScore(null);
                 }}
               >
-                <Swords size={18} /> Bắt đầu Luyện tập Tự do ({practiceQuestions.length} câu mới)
+                <Swords size={18} /> Bắt đầu Luyện tập Tự do ({practiceQuestions.length} câu)
               </button>
             )}
           </div>

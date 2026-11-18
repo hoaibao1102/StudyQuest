@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { createQuiz, gradeAnswer } from "./quiz";
+import { createQuiz, gradeAnswer, nextUnansweredIndex, pickQuestions } from "./quiz";
 
 const questions = [
   { id:"1", qualityStatus:"clean", correctAnswerIds:["A"], options:[{id:"A"},{id:"B"}] },
@@ -14,5 +14,18 @@ describe("quiz engine", () => {
   test("grades exact answer sets without partial credit", () => {
     expect(gradeAnswer(["B","A"],["A","B"])).toBe(true);
     expect(gradeAnswer(["A"],["A","B"])).toBe(false);
+  });
+});
+
+describe("practice navigation", () => {
+  test("pickQuestions keeps original order when shuffle is off", () => {
+    expect(pickQuestions(["a","b","c","d"], 2, false)).toEqual(["a","b"]);
+    expect(pickQuestions(["a","b","c","d"], null, false)).toEqual(["a","b","c","d"]);
+  });
+  test("nextUnansweredIndex skips answered ones and wraps around", () => {
+    const ids = ["1","2","3","4"];
+    expect(nextUnansweredIndex(ids, new Set(["3"]), 0)).toBe(1);
+    expect(nextUnansweredIndex(ids, new Set(["3","4"]), 2)).toBe(0);
+    expect(nextUnansweredIndex(ids, new Set(["1","2","3","4"]), 0)).toBe(-1);
   });
 });
